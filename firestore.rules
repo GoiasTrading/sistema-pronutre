@@ -1,0 +1,71 @@
+rules_version = '2';
+// ERP Pronutre — regras de acesso (empresa > usuário > papel > matriz de acessos)
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /empresas/{eid} {
+      function em() { return request.auth.token.email.lower(); }
+      function uPath() { return /databases/$(database)/documents/empresas/$(eid)/usuarios/$(em()); }
+      function cfgPath() { return /databases/$(database)/documents/empresas/$(eid)/config/geral; }
+      function me() { return get(uPath()).data; }
+      function member() { return request.auth != null && request.auth.token.email != null && exists(uPath()) && me().get('ativo', 'Sim') != 'Não'; }
+      function gestao() { return member() && me().papel == 'Gestão'; }
+      function lvl(m) { return gestao() ? 2 : get(cfgPath()).data.acessos[me().papel].get(m, 0); }
+      function finR() { return lvl('fin') >= 1 || lvl('fluxo') >= 1; }
+
+      function canRead(c) {
+        return c in ['contratos', 'negocios', 'cargas', 'parceiros', 'locais', 'motoristas', 'corretores', 'produtos', 'tabDesc']
+          || (c in ['titulos', 'contas', 'confs', 'comPg'] && finR())
+          || (c == 'impAj' && (lvl('imp') >= 1 || finR()))
+          || (c == 'simulacoes' && lvl('calc') >= 1)
+          || (c == 'log' && lvl('hist') >= 1);
+      }
+      function canWrite(c) {
+        return (c in ['negocios', 'cargas'] && (lvl('cargas') >= 2 || lvl('negocios') >= 2 || lvl('fin') >= 2))
+          || (c == 'contratos' && (lvl('contratos') >= 2 || lvl('fin') >= 2 || lvl('aprov') >= 2))
+          || (c in ['parceiros', 'locais', 'motoristas', 'corretores', 'produtos'] && (lvl('cadastros') >= 2 || me().papel == 'Logística'))
+          || (c == 'tabDesc' && lvl('config') >= 2)
+          || (c in ['titulos', 'confs', 'comPg'] && lvl('fin') >= 2)
+          || (c == 'contas' && (lvl('fin') >= 2 || lvl('config') >= 2))
+          || (c == 'impAj' && lvl('imp') >= 2)
+          || (c == 'simulacoes' && lvl('calc') >= 1);
+      }
+
+      // configuração geral (filiais, matriz de acessos, parâmetros)
+      match /config/{d} {
+        allow read: if member();
+        allow create: if request.auth != null && d == 'geral' && !exists(cfgPath())
+                      && getAfter(uPath()).data.papel == 'Gestão';
+        allow update: if gestao()
+                      || (member() && lvl('config') >= 2
+                          && request.resource.data.get('acessos', null) == resource.data.get('acessos', null)
+                          && request.resource.data.get('filiais', null) == resource.data.get('filiais', null));
+        allow delete: if false;
+      }
+
+      // usuários: id do documento = e-mail em minúsculas
+      match /usuarios/{u} {
+        allow read: if member();
+        allow create: if gestao()
+                      || (request.auth != null && u == em() && em() == 'sistemas@pronutre.com.br'
+                          && !exists(cfgPath()) && request.resource.data.papel == 'Gestão');
+        allow update: if gestao()
+                      || (member() && u == em()
+                          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['sig', 'nomeCompleto', 'sigAdiada']));
+        allow delete: if gestao();
+      }
+
+      // histórico: todos registram, só quem tem acesso ao Histórico lê, ninguém altera nem apaga
+      match /log/{id} {
+        allow create: if member();
+        allow read: if member() && lvl('hist') >= 1;
+        allow update, delete: if false;
+      }
+
+      // demais coleções
+      match /{col}/{id} {
+        allow read: if col != 'config' && col != 'usuarios' && col != 'log' && member() && canRead(col);
+        allow write: if col != 'config' && col != 'usuarios' && col != 'log' && member() && canWrite(col);
+      }
+    }
+  }
+}

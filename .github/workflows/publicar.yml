@@ -1,0 +1,65 @@
+name: Publicar
+# Cada alteração na branch main vai para o ar sozinha (https://pronutre-erp.web.app).
+# Cada proposta de alteração (pull request) ganha um link de teste que dura 7 dias.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  conferir:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - name: Conferir o código do sistema
+        run: |
+          python3 - <<'PY'
+          import re, subprocess, sys
+          s = open("public/index.html", encoding="utf-8").read()
+          for i, js in enumerate(re.findall(r"<script>(.*?)</script>", s, flags=re.S)):
+              open(f"/tmp/s{i}.js", "w", encoding="utf-8").write(js)
+              r = subprocess.run(["node", "--check", f"/tmp/s{i}.js"], capture_output=True, text=True)
+              if r.returncode: print(r.stderr); sys.exit(1)
+          print("código ok")
+          PY
+
+  teste:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    needs: conferir
+    runs-on: ubuntu-latest
+    permissions: { contents: read, pull-requests: write, checks: write }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
+          expires: 7d
+
+  producao:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: conferir
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - name: Conferir a chave de serviço (sem mostrar o conteúdo)
+        env: { PID: "${{ secrets.FIREBASE_PROJECT_ID }}", SA: "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" }
+        run: |
+          if [ -z "$PID" ] || [ -z "$SA" ]; then echo "::error::Faltam os segredos FIREBASE_PROJECT_ID e/ou FIREBASE_SERVICE_ACCOUNT no repositório."; exit 1; fi
+          printf '%s' "$SA" > "$RUNNER_TEMP/sa.json"
+          python3 - "$RUNNER_TEMP/sa.json" <<'PY'
+          import json, os, sys
+          d = json.loads(open(sys.argv[1], encoding="utf-8-sig").read())
+          if d.get("type") != "service_account" or "private_key" not in d: print("::error::O segredo não é uma chave de conta de serviço."); sys.exit(1)
+          if d.get("project_id") != os.environ["PID"]: print("::error::A chave é do projeto", d.get("project_id"), "e o FIREBASE_PROJECT_ID é", os.environ["PID"]); sys.exit(1)
+          print("chave ok:", d.get("client_email"))
+          PY
+      - name: Publicar site e regras do banco
+        env: { GOOGLE_APPLICATION_CREDENTIALS: "${{ runner.temp }}/sa.json" }
+        run: npx -y firebase-tools@13 deploy --only hosting,firestore:rules --project "${{ secrets.FIREBASE_PROJECT_ID }}" --non-interactive
