@@ -1,0 +1,21 @@
+PRONUTRE · PROGRAMA DO COMPUTADOR SERVIDOR (mesmo PC da indústria)
+
+O que faz, sozinho:
+ 1. Copia para o disco todo anexo (foto, PDF, XML) lançado no ERP; depois de 5 dias tira do Firebase.
+ 2. Relatórios gerados no sistema (PDF) vão para a pasta relatorios\AAAA-MM.
+ 3. Entrega ao sistema os anexos antigos (pela internet, via Tailscale Funnel), só para usuário ativo.
+ 4. Cópia de segurança: de hora em hora (8h-18h) o que mudou; à noite, cópia completa (guarda 30 dias).
+ 5. HD externo: com o HD marcado ligado, copia tudo para ele sozinho (no máximo 1 vez por hora).
+
+Instalação (uma vez):
+ 1. No ERP, Cadastros › Usuários: criar "servidor@pronutre.com.br", papel "Servidor". Fazer o primeiro acesso
+    com esse e-mail no site para definir a senha.
+ 2. Copiar esta pasta para C:\Pronutre\programa (o Python já está instalado por causa do programa da Goiás).
+ 3. Botão direito em instalar.bat › Executar como administrador. Preencher o config.ini (e-mail, senha) e rodar de novo.
+ 4. Tailscale (já instalado): abrir o Prompt como administrador e rodar
+        tailscale funnel --bg --https=8443 8788
+    e colocar o endereço mostrado (https://....ts.net:8443) em endereco_publico no config.ini.
+ 5. HD externo: ligar o HD e rodar marcar-hd.bat (uma vez).
+
+Atualizar: substituir servidor_pronutre.py; o programa se reinicia sozinho em até 5 minutos.
+Registro: C:\Pronutre\dados\logs\servidor.log

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Pronutre",
+  "version": "1.0.0",
+  "identifier": "br.com.pronutre.erp",
+  "build": { "frontendDist": "../dist" },
+  "app": {
+    "windows": [
+      { "label": "main", "title": "Pronutre · Gestão de Negócios", "url": "https://pronutre-erp.web.app/?app=windows", "width": 1366, "height": 860, "minWidth": 360, "minHeight": 480, "maximized": true }
+    ],
+    "security": { "csp": null }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "publisher": "Pronutre",
+    "shortDescription": "ERP Pronutre",
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.ico"],
+    "windows": {
+      "webviewInstallMode": { "type": "downloadBootstrapper" },
+      "nsis": { "installMode": "currentUser", "languages": ["PortugueseBR"], "displayLanguageSelector": false }
+    }
+  }
+}

@@ -60,6 +60,14 @@ jobs:
           if d.get("project_id") != os.environ["PID"]: print("::error::A chave é do projeto", d.get("project_id"), "e o FIREBASE_PROJECT_ID é", os.environ["PID"]); sys.exit(1)
           print("chave ok:", d.get("client_email"))
           PY
+      - name: Incluir os instaladores dos aplicativos (Windows e Android)
+        env: { GH_TOKEN: "${{ github.token }}" }
+        # No plano gratuito (Spark) o Firebase não aceita .exe/.apk soltos: vão compactados em .zip.
+        run: |
+          mkdir -p public/baixar /tmp/apps
+          gh release download aplicativos -R "${{ github.repository }}" -D /tmp/apps --clobber || echo "ainda sem aplicativos gerados"
+          if ls /tmp/apps/* >/dev/null 2>&1; then (cd /tmp/apps && for f in *; do zip -j -q "$GITHUB_WORKSPACE/public/baixar/${f%.*}.zip" "$f"; done); fi
+          ls -la public/baixar
       - name: Publicar o site
         env: { GOOGLE_APPLICATION_CREDENTIALS: "${{ runner.temp }}/sa.json" }
         run: npx -y firebase-tools@13 deploy --only hosting --project "${{ secrets.FIREBASE_PROJECT_ID || vars.FIREBASE_PROJECT_ID || 'pronutre-erp' }}" --non-interactive

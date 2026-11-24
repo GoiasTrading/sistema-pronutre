@@ -1,0 +1,70 @@
+name: Aplicativos
+# Gera o instalador do Windows (.exe) e o aplicativo Android (.apk) e coloca os dois em pronutre-erp.web.app/baixar.
+# Os aplicativos abrem o sistema do site: só precisam ser gerados de novo quando mudar nome, ícone ou a "casca".
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["apps/**", "public/manifest.webmanifest", ".github/workflows/aplicativos.yml"]
+permissions: { contents: write, actions: write }
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "17" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Gerar o projeto Android
+        working-directory: apps/android
+        run: npm install --no-save @bubblewrap/core@^1 && node gerar.js ${{ github.run_number }}
+      - name: Compilar
+        working-directory: apps/android/twa
+        run: |
+          if [ -f gradlew ]; then chmod +x gradlew; ./gradlew assembleRelease --no-daemon; else gradle assembleRelease --no-daemon; fi
+      - name: Assinar
+        env: { KS_PASS: "c_aFWrFhwJAOD8mve8ap4FPi89vhRyUh" }
+        run: |
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          IN=$(ls apps/android/twa/app/build/outputs/apk/release/*.apk | head -1); echo "apk: $IN"
+          "$BT/zipalign" -f -p 4 "$IN" alinhado.apk
+          "$BT/apksigner" sign --ks apps/android/pronutre.keystore --ks-key-alias pronutre --ks-pass env:KS_PASS --key-pass env:KS_PASS --out Pronutre.apk alinhado.apk
+          "$BT/apksigner" verify --print-certs Pronutre.apk | head -4
+      - uses: actions/upload-artifact@v4
+        with: { name: android, path: Pronutre.apk }
+
+  windows:
+    runs-on: windows-latest
+    defaults: { run: { shell: bash } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: apps/windows/src-tauri }
+      - name: Gerar o instalador
+        working-directory: apps/windows
+        run: |
+          npm install --no-save @tauri-apps/cli@^2
+          npx tauri icon ../../public/icone-512.png
+          npx tauri build --config "{\"version\":\"1.0.${{ github.run_number }}\"}"
+          cp src-tauri/target/release/bundle/nsis/*.exe ../../Pronutre-Instalador.exe
+      - uses: actions/upload-artifact@v4
+        with: { name: windows, path: Pronutre-Instalador.exe }
+
+  disponibilizar:
+    needs: [android, windows]
+    if: always() && (needs.android.result == 'success' || needs.windows.result == 'success')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { path: dist }
+      - name: Guardar os instaladores e publicar o site
+        env: { GH_TOKEN: "${{ github.token }}", R: "${{ github.repository }}" }
+        run: |
+          gh release view aplicativos -R "$R" >/dev/null 2>&1 || gh release create aplicativos -R "$R" --target main --title "Aplicativos" --notes "Instaladores do Windows e do Android (vão para pronutre-erp.web.app/baixar)."
+          for f in dist/android/Pronutre.apk dist/windows/Pronutre-Instalador.exe; do [ -f "$f" ] && gh release upload aplicativos -R "$R" "$f" --clobber; done
+          gh workflow run publicar.yml -R "$R" --ref main

@@ -20,3 +20,11 @@ Abra o endereço → **Primeiro acesso** com `sistemas@pronutre.com.br` → info
 - Dados em `empresas/pronutre/...` (pronto para várias empresas no futuro).
 - Funciona sem sinal; sair do sistema apaga os dados guardados no aparelho; sessão expira em 14 h.
 - Anexos ainda ficam no aparelho de quem anexou (próxima etapa: servidor no PC).
+
+## Aplicativos (Windows e Android)
+- Gerados pelo workflow **Aplicativos** (roda quando muda algo em `apps/` ou pelo botão *Run workflow*). Ficam em https://pronutre-erp.web.app/baixar.
+- Android: TWA assinado com `apps/android/pronutre.keystore` (não apagar: sem ela o app não atualiza). Digital em `public/.well-known/assetlinks.json`.
+- Windows: Tauri (`apps/windows`), abre o site em janela própria.
+
+## Computador servidor
+- Pasta `computador-servidor/`: anexos e relatórios no PC, anexos antigos via Tailscale Funnel (porta 8788), cópia de hora em hora + completa à noite, cópia automática para o HD externo marcado. Instruções em `computador-servidor/LEIA-ME.txt`.
