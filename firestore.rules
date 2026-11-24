@@ -11,6 +11,8 @@ service cloud.firestore {
       function gestao() { return member() && me().papel == 'Gestão'; }
       function lvl(m) { return gestao() ? 2 : get(cfgPath()).data.acessos[me().papel].get(m, 0); }
       function finR() { return lvl('fin') >= 1 || lvl('fluxo') >= 1; }
+      function vv() { return gestao() || get(cfgPath()).data.acessos[me().papel].get('valores', false) == true; }
+      function servidor() { return member() && me().papel == 'Servidor'; }
 
       function canRead(c) {
         return c in ['contratos', 'negocios', 'cargas', 'parceiros', 'locais', 'motoristas', 'corretores', 'produtos', 'tabDesc']
@@ -18,6 +20,8 @@ service cloud.firestore {
           || (c == 'impAj' && (lvl('imp') >= 1 || finR()))
           || (c == 'simulacoes' && lvl('calc') >= 1)
           || (c == 'precos' && lvl('mercado') >= 1)
+          || (c == 'contratosV' && vv())
+          || (c == 'cobr' && finR())
           || (c == 'log' && lvl('hist') >= 1);
       }
       function canWrite(c) {
@@ -29,7 +33,9 @@ service cloud.firestore {
           || (c == 'contas' && (lvl('fin') >= 2 || lvl('config') >= 2))
           || (c == 'impAj' && lvl('imp') >= 2)
           || (c == 'simulacoes' && lvl('calc') >= 1)
-          || (c == 'precos' && lvl('mercado') >= 2);
+          || (c == 'precos' && lvl('mercado') >= 2)
+          || (c == 'contratosV' && vv() && (lvl('contratos') >= 2 || lvl('cot') >= 2 || lvl('fin') >= 2 || lvl('aprov') >= 2))
+          || (c == 'cobr' && lvl('fin') >= 2);
       }
 
       // configuração geral (filiais, matriz de acessos, parâmetros)
@@ -63,10 +69,21 @@ service cloud.firestore {
         allow update, delete: if false;
       }
 
+      // anexos (fotos, PDFs, relatórios): o computador servidor copia e depois tira o conteúdo daqui
+      match /arquivos/{id} {
+        allow read, create: if member();
+        allow update, delete: if member();
+      }
+      // estado do computador servidor (endereço público, última cópia)
+      match /servidor/{d} {
+        allow read: if member();
+        allow write: if servidor() || gestao();
+      }
+
       // demais coleções
       match /{col}/{id} {
-        allow read: if col != 'config' && col != 'usuarios' && col != 'log' && member() && canRead(col);
-        allow write: if col != 'config' && col != 'usuarios' && col != 'log' && member() && canWrite(col);
+        allow read: if !(col in ['config','usuarios','log','arquivos','servidor']) && member() && canRead(col);
+        allow write: if !(col in ['config','usuarios','log','arquivos','servidor']) && member() && canWrite(col);
       }
     }
   }
