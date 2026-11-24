@@ -210,7 +210,9 @@ header.top .pdfb .sm{display:none}.clg{display:grid;grid-template-columns:repeat
   <a href="#cargas" data-v="cargas">Cargas</a>
   <a href="#campo" data-v="campo">Campo (celular)</a>
   <a href="#logistica" data-v="logistica">Logística</a>
+  <a href="#cot" data-v="cot">Cotações</a>
   <a href="#contratos" data-v="contratos">Contratos</a>
+  <a href="#mercado" data-v="mercado">Mercado (preços)</a>
   <a href="#calc" data-v="calc">Calculadora</a>
   <div class="grp">Gestão</div>
   <a href="#aprov" data-v="aprov">Aprovações <span id="aprCnt"></span></a>
@@ -247,7 +249,7 @@ const TODAY=new Date().toLocaleDateString('sv');
 const addD=(d,n)=>{const x=new Date((d||TODAY)+'T12:00:00');x.setDate(x.getDate()+(+n||0));return x.toISOString().slice(0,10)};
 const dt=d=>d?new Date(d+'T12:00:00').toLocaleDateString('pt-BR'):'—';
 const t_=kg=>`${num(kg/1000,3)} t`, sc_=kg=>`${num(kg/60,1)} sc`;
-const STATUS=['Rascunho','Aberto','Em execução','Encerrado','Cancelado'],ATIVOS=['Aberto','Em execução'];
+const STATUS=['Rascunho','Aberto','Em execução','Encerrado','Cancelado','Cotação','Perdida'],ATIVOS=['Aberto','Em execução'],COT=['Cotação','Perdida'],FORA=['Cancelado','Rascunho',...COT];
 const CAR_ST=['Indo carregar','Carregando','Em trânsito','Aguardando descarga','Entregue','Cancelada'],CARREG=['Em trânsito','Aguardando descarga','Entregue'],TRANS=['Em trânsito','Aguardando descarga'],VEL=500;
 const CATS=['Grão (saca 60 kg)','Farelo','Óleo','Caroço / oleaginosa','Outro'];
 const UFS='AC AL AP AM BA CE DF ES GO MA MT MS MG PA PB PR PE PI RJ RN RS RO RR SC SP SE TO'.split(' ');
@@ -282,7 +284,7 @@ const M0=()=>({id:uid(),nome:'',cpf:'',cnh:'',cnhCat:'E',cnhVal:'',tel:'',transp
 const C0=()=>({id:uid(),nome:'',tipo:'PF',doc:'',tel:'',email:'',emiteNF:false,cnpjNF:'',razaoNF:'',...BK,obs:'',docs:[]});
 const curFil=()=>{try{return S&&S.filial&&S.filial!=='todas'?S.filial:undefined}catch(e){return undefined}};
 const curSig=()=>{try{return (S&&S.filiais&&S.filiais.find(f=>f.id===S.filial)?.sigla)||'UDI'}catch(e){return 'UDI'}};
-function blankC(tipo,n){return{id:uid(),filial:curFil(),tipo,cod:(tipo==='compra'?'CC-':'CV-')+curSig()+'-'+String(n).padStart(4,'0'),status:'Rascunho',prod:'',parte:'',local:'',volKg:0,preco:0,ini:'',fim:'',
+function blankC(tipo,n){return{id:uid(),filial:curFil(),tipo,cod:(tipo==='compra'?'CC-':'CV-')+curSig()+'-'+String(n).padStart(4,'0'),status:'Rascunho',modal:'CIF',modalLocal:'',entrega:'',embalagem:'À GRANEL',espec:'',validade:'',contaRec:'',prod:'',parte:'',local:'',volKg:0,preco:0,ini:'',fim:'',
   pag:{modo:PAG[tipo][tipo==='compra'?1:2],dias:tipo==='compra'?0:3,base:tipo==='compra'?'origem':'destino',cond:''},impostos:[],custos:[],lanc:[],obs:'',criado:new Date().toISOString(),hist:[]}}
 function blankN(n){return{id:uid(),filial:curFil(),cod:'NG-'+curSig()+'-'+String(n).padStart(4,'0'),status:'Aberto',prod:'',compras:[],vendas:[],rotas:[],custos:[],cargas:[],docs:[],obs:'',criado:new Date().toISOString(),hist:[]}}
 function blankG(n){return{id:uid(),num:n,data:TODAY,status:'Indo carregar',compra:n.compra||'',venda:'',rota:'',modal:'Transportadora',transp:'',mot:'',terc:'',ad:80,dias:0,aloc:'venda',pesoOrig:0,pesoDest:0,dataEnt:'',freteT:0,adPago:false,fretePago:false,docs:[],nfC:'',nfV:'',ocorr:[],obs:''}}
@@ -360,11 +362,11 @@ const allCargasF=()=>NGS().flatMap(n=>n.cargas.map(g=>({...g,neg:n})));
 const filOk=()=>{if(S.filial==='todas'){toast('Escolha uma filial no topo para lançar.');return false}return true};
 const minhasFiliais=()=>curU()?.papel==='Gestão'?S.filiais:S.filiais.filter(f=>(curU()?.filiais||[]).includes(f.id));
 /* ---------- acessos ---------- */
-const MODS=[['painel','Painel'],['negocios','Negócios'],['cargas','Cargas'],['logistica','Logística'],['contratos','Contratos'],['calc','Calculadora'],['campo','Campo'],['aprov','Aprovações'],['fin','Financeiro'],['fluxo','Fluxo de caixa'],['imp','Impostos'],['rel','Relatórios'],['hist','Histórico'],['config','Configurações'],['cadastros','Cadastros'],['backup','Cópia de segurança']];
-const ACESSOS0=()=>({Comercial:{painel:2,negocios:2,cargas:1,logistica:1,contratos:2,calc:2,aprov:2,fin:1,fluxo:0,rel:1,hist:0,campo:1,imp:1,config:2,cadastros:2,backup:0,valores:true},
-  Financeiro:{painel:1,negocios:1,cargas:1,logistica:1,contratos:1,calc:0,aprov:0,fin:2,fluxo:2,rel:1,hist:0,campo:0,imp:2,config:2,cadastros:1,backup:0,valores:true},
-  Logística:{painel:1,negocios:1,cargas:2,logistica:2,contratos:0,calc:0,aprov:0,fin:0,fluxo:0,rel:1,hist:0,campo:2,imp:0,config:0,cadastros:1,backup:0,valores:false},
-  Operacional:{painel:1,negocios:0,cargas:2,logistica:1,contratos:0,calc:0,aprov:0,fin:0,fluxo:0,rel:1,hist:0,campo:2,imp:0,config:0,cadastros:1,backup:0,valores:false}});
+const MODS=[['painel','Painel'],['negocios','Negócios'],['cargas','Cargas'],['logistica','Logística'],['contratos','Contratos'],['cot','Cotações'],['mercado','Mercado (preços)'],['calc','Calculadora'],['campo','Campo'],['aprov','Aprovações'],['fin','Financeiro'],['fluxo','Fluxo de caixa'],['imp','Impostos'],['rel','Relatórios'],['hist','Histórico'],['config','Configurações'],['cadastros','Cadastros'],['backup','Cópia de segurança']];
+const ACESSOS0=()=>({Comercial:{painel:2,negocios:2,cargas:1,logistica:1,contratos:2,cot:2,mercado:2,calc:2,aprov:2,fin:1,fluxo:0,rel:1,hist:0,campo:1,imp:1,config:2,cadastros:2,backup:0,valores:true},
+  Financeiro:{painel:1,negocios:1,cargas:1,logistica:1,contratos:1,cot:1,mercado:1,calc:0,aprov:0,fin:2,fluxo:2,rel:1,hist:0,campo:0,imp:2,config:2,cadastros:1,backup:0,valores:true},
+  Logística:{painel:1,negocios:1,cargas:2,logistica:2,contratos:0,cot:0,mercado:0,calc:0,aprov:0,fin:0,fluxo:0,rel:1,hist:0,campo:2,imp:0,config:0,cadastros:1,backup:0,valores:false},
+  Operacional:{painel:1,negocios:0,cargas:2,logistica:1,contratos:0,cot:0,mercado:0,calc:0,aprov:0,fin:0,fluxo:0,rel:1,hist:0,campo:2,imp:0,config:0,cadastros:1,backup:0,valores:false}});
 if(!S.acessos)S.acessos=ACESSOS0();
 {const A0=ACESSOS0();Object.keys(A0).forEach(p=>{S.acessos[p]??={};Object.entries(A0[p]).forEach(([k,v])=>{if(!(k in S.acessos[p]))S.acessos[p][k]=v})})}
 const gestao=()=>curU()?.papel==='Gestão';
@@ -427,7 +429,7 @@ const prevChegada=(g,n)=>{if(g.prev)return g.prev;const km=+rotaDe(g,n)?.km||0;r
 function fluxo(fil){
   const it=[],okF=o=>!fil||o.filial===fil,CT=S.contratos.filter(okF),NG=S.negocios.filter(okF);
   const est={};NG.forEach(n=>n.cargas.filter(g=>['Indo carregar','Carregando'].includes(g.status)&&!(+g.pesoOrig)).forEach(g=>{const k=estKg(g,n);est[g.compra]=(est[g.compra]||0)+k;est[g.venda]=(est[g.venda]||0)+k}));
-  CT.filter(c=>c.status!=='Cancelado'&&c.status!=='Rascunho').forEach(c=>{
+  CT.filter(c=>!FORA.includes(c.status)).forEach(c=>{
     const v=c.tipo==='venda',m=cm(c),pg=c.pag||{},dues=[];
     if(pg.modo==='Antecipado')dues.push({d:c.ini||TODAY,v:m.tot,prev:true,o:'antecipado'});
     else{const prazo=pg.modo.startsWith('A prazo')?+pg.dias||0:0;
@@ -455,7 +457,7 @@ function go(v){try{history.replaceState(null,'','#'+v)}catch(e){}ui.v=v;ui.pickN
 document.getElementById('nav').addEventListener('click',e=>{const b=e.target.closest('a[data-v]');if(!b)return;e.preventDefault();document.body.classList.remove('menu-aberto');document.getElementById('navScrim').hidden=true;go(b.dataset.v)});
 const abreMenu=on=>{document.body.classList.toggle('menu-aberto',on);document.getElementById('navScrim').hidden=!on};
 document.getElementById('menuBtn').onclick=()=>abreMenu(true);document.getElementById('navX').onclick=()=>abreMenu(false);document.getElementById('navScrim').onclick=()=>abreMenu(false);
-{const hv=location.hash.slice(1);if(['painel','negocios','cargas','logistica','contratos','calc','aprov','fluxo','cadastros','backup'].includes(hv))ui.v=hv}
+{const hv=location.hash.slice(1);if(['painel','negocios','cargas','logistica','contratos','cot','mercado','calc','aprov','fluxo','cadastros','backup'].includes(hv))ui.v=hv}
 const usr=document.getElementById('usr');
 /* ---------- assinatura ---------- */
 const SIGF=['Great Vibes','Dancing Script','Allura','Sacramento','Homemade Apple'];
@@ -503,7 +505,7 @@ usr.addEventListener('change',()=>{S.user=usr.value;save();render();checkFirst()
 if(FB){const b=document.createElement('button');b.type='button';b.className='pdfb';b.textContent='Sair';b.onclick=()=>ask('Sair do sistema? Os dados guardados neste aparelho são apagados.',()=>FB.logout());usr.after(b)}
 function render(){
   document.querySelectorAll('#nav a').forEach(b=>b.classList.toggle('on',b.dataset.v===ui.v));
-  const V={painel:()=>heroP()+pendBox()+vPainel(),campo:vCampo,imp:vImp,config:vCfg,negocios:()=>ui.neg?vNeg():vNegocios(),contratos:()=>ui.draft?vEditor():vContratos(),cargas:vCargasMod,logistica:vLog,calc:vCalc,aprov:vAprov,fin:vFin,rel:vRel,hist:vHist,fluxo:vFluxo,cadastros:vCad,backup:vBackup};
+  const V={painel:()=>heroP()+pendBox()+vPainel(),campo:vCampo,imp:vImp,config:vCfg,negocios:()=>ui.neg?vNeg():vNegocios(),contratos:()=>ui.draft?vEditor():vContratos(),cot:()=>ui.draft?vEditor():vCot(),mercado:vMercado,cargas:vCargasMod,logistica:vLog,calc:vCalc,aprov:vAprov,fin:vFin,rel:vRel,hist:vHist,fluxo:vFluxo,cadastros:vCad,backup:vBackup};
   if(nivel(ui.v)<1){const f=MODS.find(([k])=>nivel(k)>=1);ui.v=f?f[0]:'painel'}
   document.querySelectorAll('#nav a').forEach(b=>{b.hidden=nivel(b.dataset.v)<1;b.classList.toggle('on',b.dataset.v===ui.v)});
   const B=document.body.classList;B.toggle('pn-neg',nivel('negocios')<2);B.toggle('pn-ctr',nivel('contratos')<2);B.toggle('pn-cg',!criaCarga());B.toggle('pn-cge',nivel('cargas')<2);B.toggle('pn-cad',!podeCad());B.toggle('pn-bk',nivel('backup')<2);
@@ -594,7 +596,7 @@ function vNegocios(){
 }
 function vNeg(){
   const n=ui.neg,isNew=!S.negocios.some(x=>x.id===n.id),r=calcNeg(n);
-  const disp=tipo=>S.contratos.filter(c=>c.filial===n.filial&&c.tipo===tipo&&!['Cancelado','Rascunho'].includes(c.status)&&(!n.prod||c.prod===n.prod)&&!n[tipo==='compra'?'compras':'vendas'].some(x=>x.cid===c.id));
+  const disp=tipo=>S.contratos.filter(c=>c.filial===n.filial&&c.tipo===tipo&&!FORA.includes(c.status)&&(!n.prod||c.prod===n.prod)&&!n[tipo==='compra'?'compras':'vendas'].some(x=>x.cid===c.id));
   const linkRows=(arr,key)=>arr.map((x,ix)=>{const c=by(S.contratos,x.cid);if(!c)return '';const livre=c.volKg-alocado(c.id,n.id);
     return `<div class="subcard"><div class="row"><b>${h(c.cod)}</b> <span>${h(pn(c.parte))}</span> <span class="mut">${verValores()?num(c.preco,4)+' R$/kg · '+brl(c.preco*60)+'/sc · ':''}${h(nm(S.locais,c.local))}</span><span class="sp"></span><button class="b sm d" data-unlink="${key}:${ix}">Desligar</button></div>
     <div class="grid" style="margin-top:8px">${fld('Volume ligado a este negócio (kg)',I(`n:${key}.${ix}.kg`,x.kg,{num:1,d:0,kgh:1}),`Livre no contrato (fora de outros negócios): ${t_(livre)}${x.kg>livre?' <b class="neg">— acima do saldo livre</b>':''}`)}</div></div>`}).join('');
@@ -890,12 +892,12 @@ function tabC(list,tipo){
 }
 function vContratos(){
   const q=filtro.q.toLowerCase(),t=ui.ct;
-  const list=CTS().filter(c=>c.tipo===t&&(filtro.st==='todos'||(filtro.st==='ativos'?ATIVOS.includes(c.status):c.status===filtro.st))&&
+  const list=CTS().filter(c=>c.tipo===t&&!COT.includes(c.status)&&(filtro.st==='todos'||(filtro.st==='ativos'?ATIVOS.includes(c.status):c.status===filtro.st))&&
     (!q||[c.cod,nm(S.produtos,c.prod),pn(c.parte),nm(S.locais,c.local)].join(' ').toLowerCase().includes(q))).sort((a,b)=>b.cod.localeCompare(a.cod));
   return `<div class="row"><h1>Contratos</h1><span class="sp"></span><button class="b p" data-a="novo">+ Contrato de ${t}</button></div>
-  <div class="row" style="margin-top:12px"><div class="pill2">${['compra','venda'].map(x=>`<button class="b ${t===x?'on':''}" data-ct="${x}">${x==='compra'?'Compras':'Vendas'} (${CTS().filter(c=>c.tipo===x).length})</button>`).join('')}</div></div>
+  <div class="row" style="margin-top:12px"><div class="pill2">${['compra','venda'].map(x=>`<button class="b ${t===x?'on':''}" data-ct="${x}">${x==='compra'?'Compras':'Vendas'} (${CTS().filter(c=>c.tipo===x&&!COT.includes(c.status)).length})</button>`).join('')}</div></div>
   <div class="row f" style="margin:14px 0"><input id="fq" placeholder="Buscar por código, produto, parte ou local" value="${h(filtro.q)}" style="flex:2 1 240px">
-  <select id="fst" style="flex:1 1 160px">${['ativos','todos',...STATUS].map(s=>`<option value="${s}" ${filtro.st===s?'selected':''}>${s==='ativos'?'Ativos':s==='todos'?'Todos':s}</option>`).join('')}</select></div>
+  <select id="fst" style="flex:1 1 160px">${['ativos','todos',...STATUS.filter(x=>!COT.includes(x))].map(s=>`<option value="${s}" ${filtro.st===s?'selected':''}>${s==='ativos'?'Ativos':s==='todos'?'Todos':s}</option>`).join('')}</select></div>
   <section class="panel">${list.length?list.map(itemCtrP).join(''):'<div class="empty"><b>Nenhum contrato</b>Lance um contrato de '+t+' ou feche um negócio pela calculadora.</div>'}</section>
   <h3>Tabela</h3><div class="card">${tabC(list,t)}</div>${exemploNote()}`;
 }
@@ -910,9 +912,10 @@ function vEditor(){
   const c=ui.draft,v=c.tipo==='venda',isNew=!S.contratos.some(x=>x.id===c.id),m=cm(c);
   const locs=S.locais.filter(l=>v?l.dest:l.orig),mine=locs.filter(l=>l.parc===c.parte),rest=locs.filter(l=>l.parc!==c.parte);
   const negs=S.negocios.filter(n=>[...n.compras,...n.vendas].some(x=>x.cid===c.id));
-  return `<div class="row"><button class="b sm" data-a="voltar">← Contratos</button><span class="sp"></span>
-    ${!isNew?'<button class="b" data-a="extratoC">Extrato (PDF)</button><button class="b d" data-a="excluir">Excluir</button>':''}<button class="b" data-a="voltar">Cancelar</button><button class="b p" data-a="salvar">Salvar</button></div>
-  <div class="row" style="margin-top:14px"><h1 style="margin:0">${isNew?'Novo contrato de '+c.tipo:'Contrato de '+c.tipo+' '+h(c.cod)}</h1>${apTag(c)}<span class="sp"></span>${!isNew&&c.aprov?.st==='pendente'&&podeAprovar(c)?`<button class="b sm p" data-aprova="contratos|${c.id}">Aprovar</button><button class="b sm d" data-recusa="contratos|${c.id}">Recusar</button>`:''}</div>${apInfo(c)}${encBox(c,isNew)}
+  const cot=COT.includes(c.status),contas=contasAt();
+  return `<div class="row"><button class="b sm" data-a="voltar">← ${cot?'Cotações':'Contratos'}</button><span class="sp"></span>
+    ${!isNew?`<button class="b" data-a="confDoc">${cot?'Cotação (PDF)':'Confirmação de negócio (PDF)'}</button>`:''}${!isNew&&c.status==='Cotação'&&nivel('cot')>=2?`<button class="b p" data-cotok="${c.id}">Fechou → contrato</button>`:''}${!isNew&&!cot?'<button class="b" data-a="extratoC">Extrato (PDF)</button><button class="b d" data-a="excluir">Excluir</button>':''}<button class="b" data-a="voltar">Cancelar</button><button class="b p" data-a="salvar">Salvar</button></div>
+  <div class="row" style="margin-top:14px"><h1 style="margin:0">${cot?(isNew?'Nova cotação de '+c.tipo:'Cotação de '+c.tipo+' '+h(c.cod)):isNew?'Novo contrato de '+c.tipo:'Contrato de '+c.tipo+' '+h(c.cod)}</h1>${c.cotOrig?`<span class="tag">da cotação ${h(c.cotOrig)}</span>`:''}${apTag(c)}<span class="sp"></span>${!isNew&&c.aprov?.st==='pendente'&&podeAprovar(c)?`<button class="b sm p" data-aprova="contratos|${c.id}">Aprovar</button><button class="b sm d" data-recusa="contratos|${c.id}">Recusar</button>`:''}</div>${apInfo(c)}${encBox(c,isNew)}
   <div class="ed" style="margin-top:14px"><div class="card">
     <div class="grid">
       ${fld('Código',I('d:cod',c.cod))}${fld('Status',SEL('d:status',STATUS,c.status))}
@@ -930,6 +933,15 @@ function vEditor(){
       ${c.pag.modo.startsWith('A prazo')?fld(`Prazo (dias após ${v?'a entrega':'o carregamento'})`,I('d:pag.dias',c.pag.dias,{num:1,d:0})):''}
       ${c.pag.modo!=='Antecipado'?fld('Paga sobre o peso de',SEL('d:pag.base',[['origem','Origem (carregamento)'],['destino','Destino (descarga)']],c.pag.base)):''}
       ${fld('Detalhes da condição',I('d:pag.cond',c.pag.cond,{ph:'Ex.: 30% antecipado, saldo na descarga'}),'','full')}
+    </div>
+    <h3>${cot?'Cotação':'Confirmação de negócio'} · documento</h3>
+    <div class="grid">
+      ${fld('Modalidade de frete',SEL('d:modal',['CIF','FOB'],c.modal||'CIF'))}${fld('Local da modalidade',I('d:modalLocal',c.modalLocal||'',{ph:'Vazio = local do contrato'}))}
+      ${fld('Entrega',I('d:entrega',c.entrega||'',{ph:'Ex.: IMEDIATA · vazio = período do contrato'}))}${fld('Embalagem',SEL('d:embalagem',['À GRANEL','BIG BAG','SACARIA 25 KG','SACARIA 40 KG','SACARIA 50 KG','SACARIA 60 KG','TAMBOR','IBC'],c.embalagem||'À GRANEL'))}
+      ${cot?fld('Validade da cotação',I('d:validade',c.validade||'',{type:'date'})):''}
+      ${v?fld('Conta para recebimento',`<select data-b="d:contaRec"><option value="">${contas[0]?'Padrão: '+h(contas[0].nome):'— cadastre em Configurações › Contas —'}</option>${contas.map(k=>`<option value="${k.id}" ${c.contaRec===k.id?'selected':''}>${h(k.nome)} · ${h(k.banco||'')}</option>`).join('')}</select>`):fld('Conta para pagamento','<div class="mut" style="padding:8px 0">Dados bancários do cadastro do fornecedor</div>')}
+      ${fld('Especificação da mercadoria',I('d:espec',c.espec||'',{ph:'Vazio = padrões de qualidade abaixo'}),'','full')}
+      ${fld('Condições especiais (uma por linha)',`<textarea data-b="d:condEsp" rows="4">${h(c.condEsp??S.cfg.condEsp??'')}</textarea>`,'Padrão em Configurações › Geral.','full')}
     </div>
     ${qualEd(c)}
     <h3>Impostos (lançados manualmente)</h3>${lin('d',c.impostos,'impostos',['%','R$/t','R$/sc','R$'])}
@@ -978,7 +990,7 @@ function fxTable(items,start){
 /* ---------- cadastros ---------- */
 const PF=[['nome','Razão social / nome'],['fantasia','Nome fantasia / apelido'],['tipo','Pessoa',['PJ','PF']],['doc','CPF / CNPJ'],['ie','Inscrição estadual'],['papeis','Papéis','CHK'],
   ['cnae','Atividade principal (CNAE)','',''],['cnaeSec','Atividades secundárias (CNAE) — uma por linha','TXT'],['rntrc','RNTRC (transportadora)'],
-  ['end','Endereço'],['cidade','Cidade'],['uf','UF',['',...UFS]],['tel','Telefone / WhatsApp'],['email','E-mail'],['contato','Pessoa de contato'],
+  ['end','Endereço'],['bairro','Bairro'],['cidade','Cidade'],['cep','CEP'],['uf','UF',['',...UFS]],['tel','Telefone / WhatsApp'],['email','E-mail'],['contato','Pessoa de contato'],
   ['_h','Dados de pagamento','SEC'],['banco','Banco'],['agencia','Agência'],['conta','Conta'],['tipoConta','Tipo de conta',['Corrente','Poupança','Pagamento']],['pix','Chave PIX'],['titular','Titular da conta'],['docTitular','CPF / CNPJ do titular'],['obs','Observações','TXT'],['_locs','Locais de carregamento e descarga','LOCS'],['docs','Documentos','DOCS:P']];
 const UF_=[['nome','Nome de usuário'],['email','E-mail de login'],['ativo','Acesso',['Sim','Não']],['nomeCompleto','Nome completo (vai na assinatura)'],['papel','Papel',PAPEIS_U],['cargo','Cargo'],['filiais','Filiais em que trabalha','FIL'],['_sig','Assinatura','SIG']];
 const CF=[['nome','Nome / razão social'],['tipo','Pessoa',['PF','PJ']],['doc','CPF / CNPJ'],['tel','Telefone / WhatsApp'],['email','E-mail'],['nf','Nota fiscal','NF'],['_h','Dados de pagamento','SEC'],['banco','Banco'],['agencia','Agência'],['conta','Conta'],['tipoConta','Tipo de conta',['Corrente','Poupança','Pagamento']],['pix','Chave PIX'],['titular','Titular da conta'],['docTitular','CPF / CNPJ do titular'],['obs','Observações','TXT'],['docs','Documentos','DOCS:C']];
@@ -1090,9 +1102,10 @@ const show=(k,v)=>{if(k==='prod')return nm(S.produtos,v);if(k==='parte'||k==='tr
 const CHAVE=['preco','volKg','parte','prod','compras','vendas','rotas','pag.modo','pag.dias','impostos','custos'];
 function commit(list,obj,extra){const old=list.find(x=>x.id===obj.id),q=new Date().toISOString(),u=S.user||'Gestão',ap=list===S.contratos||list===S.negocios;
   if(old){const a=flat(old),b=flat(obj),m=extra?[extra]:[];let chave=false;new Set([...Object.keys(a),...Object.keys(b)]).forEach(k=>{if(k==='cargas'&&extra)return;if(k.startsWith('aprov'))return;if(String(a[k])!==String(b[k])){m.push(`${LBL[k]||k}: ${show(k,a[k])} → ${show(k,b[k])}`);if(CHAVE.includes(k))chave=true}});
-    if(ap&&chave&&old.aprov?.st!=='pendente'){obj.aprov={st:'pendente',lancPor:u,lancEm:q,motivo:'Alterado após '+(old.aprov?.st||'lançamento')};m.push('Volta para aprovação (alteração de preço, volume, partes, frete, pagamento ou custos)')}
+    if(ap&&COT.includes(old.status)&&!COT.includes(obj.status)){obj.aprov={st:'pendente',lancPor:u,lancEm:q,lancSig:sigSnap(),motivo:'Cotação fechada'};obj.aprov.lancCod=hash8(`${obj.cod}|${u}|${q}`)}
+    else if(ap&&!COT.includes(obj.status)&&chave&&old.aprov?.st!=='pendente'){obj.aprov={st:'pendente',lancPor:u,lancEm:q,motivo:'Alterado após '+(old.aprov?.st||'lançamento')};m.push('Volta para aprovação (alteração de preço, volume, partes, frete, pagamento ou custos)')}
     if(m.length){obj.hist=[...(old.hist||[]),{q,u,m}];const ct=list===S.contratos;logA(extra&&/excluída/.test(extra)?'exc':extra&&/^Carga/.test(extra)?'cargas':ct?'contratos':'negocios',extra?extra.split(':')[0]:'Alterou '+(ct?'contrato':'negócio'),obj.cod,m.join(' · '),obj.id)}Object.assign(old,structuredClone(obj))}
-  else{if(ap){obj.aprov={st:'pendente',lancPor:u,lancEm:q,lancSig:sigSnap()};obj.aprov.lancCod=hash8(`${obj.cod}|${u}|${q}`)};obj.hist=[{q,u,m:['Criado'+(extra?' · '+extra:'')]}];logA(list===S.contratos?'contratos':'negocios','Criou '+(list===S.contratos?'contrato de '+obj.tipo:'negócio'),obj.cod,extra||'',obj.id);list.push(structuredClone(obj))}save()}
+  else{if(ap&&!COT.includes(obj.status)){obj.aprov={st:'pendente',lancPor:u,lancEm:q,lancSig:sigSnap()};obj.aprov.lancCod=hash8(`${obj.cod}|${u}|${q}`)};obj.hist=[{q,u,m:['Criado'+(extra?' · '+extra:'')]}];logA(list===S.contratos?'contratos':'negocios','Criou '+(list===S.contratos?'contrato de '+obj.tipo:'negócio'),obj.cod,extra||'',obj.id);list.push(structuredClone(obj))}save()}
 function decidir(k,id,ok,motivo){const o=by(S[k],id),q=new Date().toISOString();if(!o)return;if(ok&&!curU()?.sig?.img)return sigModal(false,()=>decidir(k,id,ok,motivo));
   o.aprov={...o.aprov,st:ok?'aprovado':'recusado',por:S.user,em:q,motivo:motivo||'',porSig:ok?sigSnap():null,porCod:hash8(`${o.cod}|${S.user}|${q}|${ok}`)};
   o.hist=[...(o.hist||[]),{q,u:S.user,m:[ok?'Aprovado':'Recusado'+(motivo?': '+motivo:'')]}];logA('aprov',ok?'Aprovou':'Recusou',o.cod,'',id,motivo);save();
@@ -1399,7 +1412,7 @@ function relBlocos(R){const {NG,G,CT,noP}=relDados(R),vv=verValores(),B=[],sec=n
     B.push({h:'Volume por produto',head:['Produto','Cargas carregadas','Carregado (t)','Carregado (sacas)','Entregue (t)'],num:[1,2,3,4],body:Object.entries(m).map(([p,x])=>[nm(S.produtos,p),x.c,num(x.kg/1000,1),num(x.kg/60,0),num(x.ent/1000,1)])})}
   if(sec.has('parceiros')){const ag=(a,f)=>{const m={};a.forEach(g=>{const k=f(g),x=m[k]??={c:0,kg:0};x.c++;x.kg+=+g.pesoOrig||0});return Object.entries(m).sort((a,b)=>b[1].kg-a[1].kg).map(([k,x])=>[k,x.c,num(x.kg/1000,1)])};
     B.push({h:'Volume carregado por fornecedor',head:['Fornecedor','Cargas','Toneladas'],num:[1,2],body:ag(gp,g=>pa(g.compra))});B.push({h:'Volume carregado por cliente',head:['Cliente','Cargas','Toneladas'],num:[1,2],body:ag(gp,g=>pa(g.venda))})}
-  if(sec.has('contratos')){const l=CT.filter(c=>!['Cancelado','Rascunho'].includes(c.status)).sort((a,b)=>a.cod.localeCompare(b.cod));
+  if(sec.has('contratos')){const l=CT.filter(c=>!FORA.includes(c.status)).sort((a,b)=>a.cod.localeCompare(b.cod));
     B.push({h:'Contratos e saldos',head:['Contrato','Tipo','Parte','Produto','Volume (t)','Carregado/entregue (t)','Em trânsito (t)','Saldo (t)',...(vv?['R$/kg','Saldo financeiro']:[]),'Status'],num:vv?[4,5,6,7,8,9]:[4,5,6,7],
       body:l.map(c=>{const m=cm(c);return[c.cod,c.tipo,pn(c.parte),nm(S.produtos,c.prod),num(m.vol/1000,1),num(m.done/1000,1),num(m.tran/1000,1),num(m.rest/1000,1),...(vv?[num(m.pr,4),brl(m.saldoTot)]:[]),c.status]})})}
   if(sec.has('resultado'))B.push({h:'Resultado por negócio',head:['Negócio','Produto','Vendido (t)','Receita','Resultado projetado','R$/sc','Entregue (t)','Resultado realizado'],num:[2,3,4,5,6,7],
@@ -1419,7 +1432,7 @@ function relBlocos(R){const {NG,G,CT,noP}=relDados(R),vv=verValores(),B=[],sec=n
   return B}
 function loteDoc(R){const {G,CT,noP}=relDados(R);
   if(R.lt==='cargas'){const l=G.filter(g=>noP(g.data)).sort(byD);return{n:l.length,html:l.map((g,i)=>`<div class="${i?'pb':''}">${docTop('Ficha da carga',g.neg.cod+' · carga '+g.num)}${fichaCarga(g,g.neg)}</div>`).join('')}}
-  const l=CT.filter(c=>c.status!=='Rascunho'&&(cm(c).cargas.some(g=>noP(g.data))||(c.lanc||[]).some(x=>noP(x.data)))).sort((a,b)=>a.cod.localeCompare(b.cod));
+  const l=CT.filter(c=>!['Rascunho',...COT].includes(c.status)&&(cm(c).cargas.some(g=>noP(g.data))||(c.lanc||[]).some(x=>noP(x.data)))).sort((a,b)=>a.cod.localeCompare(b.cod));
   return{n:l.length,html:l.map((c,i)=>`<div class="${i?'pb':''}">${docTop('Extrato do contrato',c.cod)}${extratoCtr(c)}</div>`).join('')}}
 function vRel(){const R=relUi(),mf=gestao()?S.filiais:minhasFiliais();
   const atal=(()=>{const d=new Date(TODAY+'T12:00:00'),pm=new Date(d.getFullYear(),d.getMonth()-1,1),pmI=pm.toLocaleDateString('sv'),pmF=new Date(d.getFullYear(),d.getMonth(),0).toLocaleDateString('sv');return[['Este mês',TODAY.slice(0,8)+'01',TODAY],['Mês passado',pmI,pmF],['Últimos 30 dias',addD(TODAY,-29),TODAY],['Este ano',TODAY.slice(0,4)+'-01-01',TODAY]]})();
@@ -1470,7 +1483,7 @@ function qualEd(c){const qs=c.qualEd?c.qual||[]:parseQual(by(S.produtos,c.prod)?
 /* ---------- comissões ---------- */
 S.comPg??={};
 function comissoes(fil){const r=[],okF=o=>!fil||o.filial===fil;
-  S.contratos.filter(c=>okF(c)&&!['Cancelado','Rascunho'].includes(c.status)).forEach(c=>(c.custos||[]).filter(l=>l.corr).forEach(l=>cm(c).cargas.filter(g=>g.status==='Entregue'&&g.dataEnt).forEach(g=>{
+  S.contratos.filter(c=>okF(c)&&!FORA.includes(c.status)).forEach(c=>(c.custos||[]).filter(l=>l.corr).forEach(l=>cm(c).cargas.filter(g=>g.status==='Entregue'&&g.dataEnt).forEach(g=>{
     const kg=c.tipo==='venda'?(+g.pesoDest||+g.pesoOrig||0):(+g.pesoOrig||0),key=c.id+'|'+l.id+'|'+g.id,lib=addD(g.dataEnt,1);
     r.push({key,corr:l.corr,c,l,g,kg,v:comissao(l,c,kg),lib,ok:lib<=TODAY,pg:S.comPg[key],fil:c.filial})})));return r}
 let comSel=new Set();
@@ -1515,6 +1528,101 @@ function aprovEnc(){const l=CTS().filter(prontoEnc);if(!l.length)return'';const 
 /* ---------- configurações: tabelas, contas, geral ---------- */
 S.tabDesc??=[];S.contas??=[];S.confs??=[];S.impAj??=[];
 S.cfg={hM:'10:00',hT:'17:00',saldoMin:0,frCred:true,pisAl:1.65,cofAl:7.6,...(S.cfg||{})};
+/* ---------- empresa, extenso ---------- */
+S.cfg.empresa??={razao:'PRONUTRE',cnpj:'',ie:'',end:'',bairro:'',cidade:'Uberlândia',uf:'MG',cep:'',tel:'',email:''};
+S.precos??=[];
+S.cfg.condEsp??='CONFORME COMBINADO ENTRE AMBAS AS PARTES, FAVOR ASSINAREM ESTA CONFIRMAÇÃO.\nA PARTE QUE NÃO CUMPRIR COM TODOS OS ITENS AQUI ESTIPULADOS E ACEITOS DEVERÁ ARCAR COM TODAS AS DESPESAS DECORRENTES DA INOBSERVÂNCIA. QUALQUER DISCREPÂNCIA, COMUNIQUE IMEDIATAMENTE.\nA MERCADORIA DESTA CONFIRMAÇÃO SERÁ USADA EXCLUSIVAMENTE COMO INSUMO NA FABRICAÇÃO DE RAÇÃO OU ALIMENTAÇÃO ANIMAL.';
+function extenso(n){n=Math.floor(Math.abs(+n||0));if(!n)return'zero';const U=['','um','dois','três','quatro','cinco','seis','sete','oito','nove','dez','onze','doze','treze','catorze','quinze','dezesseis','dezessete','dezoito','dezenove'],D=['','','vinte','trinta','quarenta','cinquenta','sessenta','setenta','oitenta','noventa'],C=['','cento','duzentos','trezentos','quatrocentos','quinhentos','seiscentos','setecentos','oitocentos','novecentos'];
+  const tri=x=>{if(x===100)return'cem';const c=Math.floor(x/100),r=x%100,p=[];if(c)p.push(C[c]);if(r){if(r<20)p.push(U[r]);else{const d=Math.floor(r/10),u=r%10;p.push(D[d]+(u?' e '+U[u]:''))}}return p.join(' e ')};
+  const G=[['',''],['mil','mil'],['milhão','milhões'],['bilhão','bilhões']],parts=[];let i=0,rest=n;const grupos=[];while(rest>0){grupos.push(rest%1000);rest=Math.floor(rest/1000)}
+  for(i=grupos.length-1;i>=0;i--){const g=grupos[i];if(!g)continue;let t=i===1&&g===1?'mil':tri(g)+(i?' '+(g>1?G[i][1]:G[i][0]):'');parts.push({t,g,i})}
+  return parts.map((p,k)=>{if(k===0)return p.t;const last=k===parts.length-1;return(last&&(p.g<100||p.g%100===0)?' e ':', ')+p.t}).join('')}
+const reaisExt=v=>{v=Math.round((+v||0)*100);const r=Math.floor(v/100),c=v%100;let s=r?extenso(r)+(r===1?' real':' reais'):'';if(/(milhão|milhões|bilhão|bilhões)$/.test(extenso(r))&&r)s=extenso(r)+' de reais';if(c)s+=(s?' e ':'')+extenso(c)+(c===1?' centavo':' centavos');return s||'zero real'};
+const UP=s=>String(s||'').toUpperCase();
+const endTxt=o=>[o?.end,o?.bairro?'BAIRRO: '+o.bairro:''].filter(Boolean).join(' · ');
+const cidTxt=o=>[[o?.cidade,o?.uf].filter(Boolean).join('-'),o?.cep?'CEP: '+o.cep:''].filter(Boolean).join(' · ');
+const DMES=['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
+const dataExt=d=>{const x=new Date((d||TODAY)+'T12:00:00');return`${x.getDate()} DE ${DMES[x.getMonth()]} DE ${x.getFullYear()}`};
+
+/* ---------- confirmação de negócio / cotação (modelo Pronutre) ---------- */
+function confDoc(c){const cot=COT.includes(c.status),v=c.tipo==='venda',E=S.cfg.empresa,p=by(S.parceiros,c.parte)||{},prod=by(S.produtos,c.prod)||{},l=by(S.locais,c.local),kg=+c.volKg||0,pt=(+c.preco||0)*1000,grao=/saca/i.test(prod.cat||'');
+  const emp={nome:E.razao,end:E.end,bairro:E.bairro,cidade:E.cidade,uf:E.uf,cep:E.cep,doc:E.cnpj,ie:E.ie},par={nome:p.nome,end:p.end,bairro:p.bairro,cidade:p.cidade,uf:p.uf,cep:p.cep,doc:p.doc,ie:p.ie};
+  const vend=v?emp:par,comp=v?par:emp;
+  const bloco=(rot,o)=>`<tr><td class="k">${rot}</td><td>${[`<b>${h(UP(o.nome)||'—')}</b>`,h(UP(endTxt(o))),h(UP(cidTxt(o))),[o.doc?(String(o.doc).replace(/\D/g,'').length>11?'CNPJ: ':'CPF: ')+h(o.doc):'',o.ie?'I.E.: '+h(o.ie):''].filter(Boolean).join(' · ')].filter(Boolean).join('<br>')}</td></tr>`;
+  const conta=v?(()=>{const k=by(S.contas,c.contaRec)||contasAt()[0];return k?`${UP(k.banco)}  AG. ${h(k.ag)}  C/C ${h(k.conta)} – ${E.cnpj?'CNPJ: '+h(E.cnpj)+' – ':''}EM NOME DO VENDEDOR`:''})():(p.banco?`${UP(p.banco)}  AG. ${h(p.agencia||'')}  C/C ${h(p.conta||'')}${p.pix?' · PIX: '+h(p.pix):''}${p.titular?' – TITULAR: '+h(UP(p.titular)):''}`:'');
+  const pag=c.pag||{},prazo=pag.modo?.startsWith('A prazo')?`${pag.dias} DIAS ${pag.base==='destino'?'DA DESCARGA':'DO CARREGAMENTO'}`:UP(pag.modo||''),
+    pagTxt=`${prazo}${pag.cond?' · '+UP(pag.cond):''}${conta?', NA SEGUINTE CONTA:<br>'+conta:''}`;
+  const espec=c.espec||qualDe(c).filter(q=>q.pad!==''&&q.pad!=null).map(q=>`${UP(q.nome)} ${q.tipo==='max'?'MÁX':'MÍN'} ${num(q.pad,1)}%`).join(', ');
+  const modal=c.modal?`${c.modal}${c.modalLocal?' – '+UP(c.modalLocal):l?' – '+UP(l.nome+(l.cidade?' · '+l.cidade+'/'+(l.uf||''):'')):''}`:'—';
+  const entrega=c.entrega||(c.ini||c.fim?`${c.ini?'DE '+dt(c.ini):''}${c.fim?' ATÉ '+dt(c.fim):''}`:'A COMBINAR');
+  const conds=(c.condEsp??S.cfg.condEsp??'').split('\n').map(x=>x.trim()).filter(Boolean);
+  const titulo=cot?'COTAÇÃO':'CONFIRMAÇÃO DE NEGÓCIO',sigP=c.aprov?.porSig||c.aprov?.lancSig;
+  const body=`<div class="hd"><img src="${LOGO.verde}" alt="Pronutre"><div><b>${h(UP(E.razao))}</b><br>${[E.cnpj?'CNPJ: '+h(E.cnpj):'',E.ie?'IE: '+h(E.ie):''].filter(Boolean).join(' · ')}</div></div>
+  <h1>${titulo} Nº ${h(c.cod)}</h1>
+  <p class="intro">${cot?`APRESENTAMOS A SEGUINTE PROPOSTA, VÁLIDA ATÉ ${c.validade?dt(c.validade):'48 HORAS DA EMISSÃO'}, SUJEITA À CONFIRMAÇÃO DAS PARTES:`:'CONFORME AS INSTRUÇÕES DE NEGOCIAÇÃO DE INTEIRA RESPONSABILIDADE DAS PARTES ABAIXO DESIGNADAS, CONHECIDAS E ACEITAS, CONFIRMAMOS A SEGUINTE TRANSAÇÃO:'}</p>
+  <table class="cf">${bloco('VENDEDOR',vend)}${bloco('COMPRADOR',comp)}
+  <tr><td class="k">QUANTIDADE</td><td><b>${num(kg)} KG</b> (${UP(extenso(kg))} QUILOS)${grao?` · ${num(kg/60)} SACAS DE 60 KG`:''}</td></tr>
+  <tr><td class="k">MERCADORIA</td><td><b>${h(UP(prod.nome||''))}</b>${espec?' – '+h(UP(espec)):''}${prod.ncm?' · NCM '+h(prod.ncm):''}</td></tr>
+  <tr><td class="k">PREÇO</td><td><b>${brl(pt)}</b> (${UP(reaisExt(pt))}) POR TONELADA${grao?` · ${brl((+c.preco||0)*60)} POR SACA`:''}</td></tr>
+  <tr><td class="k">VALOR TOTAL</td><td>${brl(kg*(+c.preco||0))} (${UP(reaisExt(kg*(+c.preco||0)))})</td></tr>
+  <tr><td class="k">MODALIDADE</td><td>${h(UP(modal))}</td></tr>
+  <tr><td class="k">PAGAMENTO</td><td>${pagTxt||'—'}</td></tr>
+  <tr><td class="k">ENTREGA</td><td>${h(UP(entrega))}</td></tr>
+  <tr><td class="k">EMBALAGEM</td><td>${h(UP(c.embalagem||'À GRANEL'))}</td></tr></table>
+  ${conds.length?`<h3>CONDIÇÕES ESPECIAIS</h3><ol class="ce">${conds.map(x=>`<li>${h(UP(x))}</li>`).join('')}</ol>`:''}
+  <p class="loc">${h(UP(E.cidade||''))}${E.uf?'-'+h(E.uf):''}, ${dataExt(c.dataDoc||TODAY)}.</p>
+  <div class="ass">${[vend,comp].map((o,i)=>{const nosso=(v&&i===0)||(!v&&i===1);return`<div><div class="im">${nosso&&sigP?.img?`<img src="${sigP.img}" alt="">`:''}</div><div class="ln"><b>${h(UP(o.nome||''))}</b><br>${o.doc?(String(o.doc).replace(/\D/g,'').length>11?'CNPJ: ':'CPF: ')+h(o.doc):''}</div></div>`}).join('')}</div>
+  <div class="ft">${h(UP(endTxt(E)))}${E.cidade?' · '+h(UP(E.cidade))+'-'+h(E.uf||''):''}<br>${[E.tel?'Tel.: '+h(E.tel):'',E.email?'e-mail: '+h(E.email):''].filter(Boolean).join(' · ')}</div>`;
+  return`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>${titulo} ${h(c.cod)}</title><style>
+  body{font:12.5px/1.5 Arial,Helvetica,sans-serif;color:#141a14;margin:26px 34px}@page{size:A4;margin:14mm 16mm}@media print{body{margin:0}}
+  .hd{display:flex;align-items:center;gap:16px;border-bottom:3px solid #1e4a2e;box-shadow:0 3px 0 #d4a443;padding-bottom:10px}.hd img{height:54px}.hd div{text-align:right;flex:1;font-size:12px}
+  h1{font-size:17px;margin:20px 0 6px;letter-spacing:.03em;color:#1e4a2e}.intro{font-size:12px;margin:4px 0 14px}
+  table.cf{width:100%;border-collapse:collapse}table.cf td{padding:6px 4px;vertical-align:top;border-bottom:1px solid #e6dfcc}td.k{width:120px;font-weight:700;color:#1e4a2e;white-space:nowrap}
+  h3{font-size:13px;color:#1e4a2e;margin:18px 0 4px}ol.ce{margin:0;padding-left:18px;font-size:11.5px}ol.ce li{margin:3px 0}.loc{margin:22px 0 6px;font-weight:700}
+  .ass{display:flex;gap:40px;margin-top:20px}.ass>div{flex:1;text-align:center;font-size:11.5px}.ass .im{height:64px;display:flex;align-items:flex-end;justify-content:center}.ass img{max-height:60px;max-width:100%}.ass .ln{border-top:1px solid #141a14;padding-top:4px}
+  .ft{margin-top:28px;border-top:1px solid #d4a443;padding-top:6px;text-align:center;font-size:10.5px;color:#4a564a}${WMCSS}</style></head><body>${WMIMG()}${body}<script>window.onload=()=>setTimeout(()=>{try{print()}catch(e){}},400)<\/script></body></html>`}
+
+/* ---------- cotações ---------- */
+let cotF={tipo:'venda',st:'abertas',q:''};
+function vCot(){const q=cotF.q.toLowerCase(),l=CTS().filter(c=>COT.includes(c.status)&&c.tipo===cotF.tipo&&(cotF.st==='todas'||(cotF.st==='abertas'?c.status==='Cotação':c.status==='Perdida'))&&(!q||[c.cod,pn(c.parte),nm(S.produtos,c.prod)].join(' ').toLowerCase().includes(q))).sort((a,b)=>b.cod.localeCompare(a.cod)),ed=nivel('cot')>=2;
+  const fech=CTS().filter(c=>c.tipo===cotF.tipo&&c.cotOrig).length,perd=CTS().filter(c=>c.tipo===cotF.tipo&&c.status==='Perdida').length;
+  return`<div class="row"><h1>Cotações</h1><span class="sp"></span>${ed?`<button class="b p" data-a="novaCot">+ Cotação de ${cotF.tipo}</button>`:''}</div>
+  <p class="mut">Proposta para o cliente (ou recebida do fornecedor). Gera o PDF da cotação; quando fechar, vira contrato com a Confirmação de Negócio e vai para aprovação. Cotações perdidas ficam no histórico de preços.</p>
+  <div class="row" style="margin:12px 0;gap:8px;flex-wrap:wrap"><div class="pill2">${['venda','compra'].map(x=>`<button class="b ${cotF.tipo===x?'on':''}" data-cott="${x}">${x==='venda'?'De venda':'De compra'}</button>`).join('')}</div>
+   <select data-cotf="st" style="width:auto">${[['abertas','Em aberto'],['perdidas','Perdidas'],['todas','Todas']].map(([k,t])=>`<option value="${k}" ${cotF.st===k?'selected':''}>${t}</option>`).join('')}</select><input data-cotf="q" placeholder="Buscar" value="${h(cotF.q)}" style="flex:1;min-width:160px"></div>
+  <div class="kpis"><div class="kpi"><span>Em aberto</span><b>${CTS().filter(c=>c.tipo===cotF.tipo&&c.status==='Cotação').length}</b><span>cotações</span></div><div class="kpi"><span>Fechadas</span><b class="pos">${fech}</b><span>viraram contrato</span></div><div class="kpi"><span>Perdidas</span><b class="neg">${perd}</b><span>${fech+perd?num(fech/(fech+perd)*100)+'% de conversão':'—'}</span></div></div>
+  <section class="panel">${l.length?`<div class="scroll"><table class="stack"><thead><tr><th>Cotação</th><th>Parte</th><th>Produto</th><th class="n">Volume</th>${verValores()?'<th class="n">Preço</th>':''}<th>Validade</th><th>Status</th><th></th></tr></thead><tbody>${l.map(c=>`<tr><td><b>${h(c.cod)}</b></td><td>${h(pn(c.parte))}</td><td>${h(nm(S.produtos,c.prod))}</td><td class="n">${t_(+c.volKg||0)}</td>${verValores()?`<td class="n">${brl((+c.preco||0)*1000)}/t</td>`:''}<td>${c.validade?dt(c.validade)+(c.validade<TODAY&&c.status==='Cotação'?' <span class="tag no">vencida</span>':''):'—'}</td><td>${stTag(c.status)}${c.motivoPerda?`<br><span class="mut">${h(c.motivoPerda)}</span>`:''}</td>
+   <td><div class="acts"><button class="b sm" data-open="${c.id}">Abrir</button><button class="b sm" data-cotpdf="${c.id}">PDF</button>${ed&&c.status==='Cotação'?`<button class="b sm p" data-cotok="${c.id}">Fechou</button><button class="b sm d" data-cotno="${c.id}">Perdida</button>`:''}</div></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty"><b>Nenhuma cotação</b></div>'}</section>`}
+function cotFechar(id){const c=by(S.contratos,id);if(!c)return;ask(`Fechar a cotação ${c.cod}? Ela vira contrato de ${c.tipo} (status Aberto), entra no fluxo e vai para aprovação.`,()=>{const o=structuredClone(c);o.status='Aberto';o.cotOrig=o.cod;o.cod=(o.tipo==='compra'?'CC-':'CV-')+curSig()+'-'+String(nextSeq(o.tipo==='compra'?'CC':'CV')).padStart(4,'0');o.dataDoc=TODAY;commit(S.contratos,o,'Cotação fechada: virou contrato');logA('contratos','Fechou cotação',o.cod,pn(o.parte),o.id);ui.draft=null;ui.v='contratos';ui.ct=o.tipo;render();toast('Cotação fechada. Gere a Confirmação de Negócio no contrato.')})}
+function cotPerder(id){const c=by(S.contratos,id);if(!c)return;M.innerHTML=`<div class="modal"><div class="card"><h2>Cotação perdida · ${h(c.cod)}</h2><div class="f"><label>Motivo</label><select id="mMo"><option>Preço</option><option>Prazo de pagamento</option><option>Prazo de entrega</option><option>Qualidade</option><option>Frete / logística</option><option>Cliente desistiu</option><option>Outro</option></select></div><div class="f"><label>Observação (ex.: preço do concorrente)</label><input id="mOb"></div><div class="row" style="margin-top:10px"><span class="sp"></span><button class="b" id="mNo">Cancelar</button><button class="b d" id="mYes">Marcar perdida</button></div></div></div>`;
+  document.getElementById('mNo').onclick=()=>M.innerHTML='';document.getElementById('mYes').onclick=()=>{const o=structuredClone(c);o.status='Perdida';o.motivoPerda=document.getElementById('mMo').value+(document.getElementById('mOb').value.trim()?' · '+document.getElementById('mOb').value.trim():'');M.innerHTML='';commit(S.contratos,o,'Cotação perdida: '+o.motivoPerda);render()}}
+
+/* ---------- mercado: histórico de preços ---------- */
+let mkF={prod:'',tipo:'',st:'',praca:'',ini:addD(TODAY,-180),fim:TODAY};
+const prazoDias=c=>c.pag?.modo?.startsWith('A prazo')?+c.pag.dias||0:c.pag?.modo==='Antecipado'?-1:0;
+function mercadoLinhas(){const ctr=S.contratos.filter(c=>c.status!=='Cancelado'&&c.status!=='Rascunho'&&+c.preco).map(c=>{const l=by(S.locais,c.local);return{d:c.dataDoc||(c.hist?.[0]?.q||'').slice(0,10)||c.ini||TODAY,tipo:c.tipo,prod:c.prod,parte:pn(c.parte),praca:l?[l.cidade,l.uf].filter(Boolean).join('/'):'',kg:+c.volKg||0,pr:+c.preco,prazo:prazoDias(c),modal:c.modal||'',st:c.status==='Cotação'?'Cotação':c.status==='Perdida'?'Perdida':'Fechado',ref:c.cod,obs:c.motivoPerda||'',fonte:'contrato'}});
+  const man=S.precos.map(x=>({d:x.data,tipo:x.tipo,prod:x.prod,parte:x.parte||x.fonte||'',praca:x.praca||'',kg:+x.kg||0,pr:+x.preco,prazo:+x.prazo||0,modal:x.modal||'',st:'Mercado',ref:'',obs:x.obs||'',fonte:'manual',id:x.id}));
+  return[...ctr,...man].filter(r=>(!mkF.prod||r.prod===mkF.prod)&&(!mkF.tipo||r.tipo===mkF.tipo)&&(!mkF.st||r.st===mkF.st)&&(!mkF.praca||r.praca.toLowerCase().includes(mkF.praca.toLowerCase()))&&r.d>=mkF.ini&&r.d<=mkF.fim).sort((a,b)=>b.d.localeCompare(a.d))}
+function graficoPreco(L){const ps=[...new Set(L.map(r=>r.d))].sort();if(ps.length<2)return'<p class="mut">Gráfico aparece com preços em pelo menos duas datas.</p>';
+  const W=760,H=220,pad=44,ser={venda:'#1e4a2e',compra:'#d4a443'},pts={};['venda','compra'].forEach(t=>{const m={};L.filter(r=>r.tipo===t).forEach(r=>{(m[r.d]??=[]).push(r)});pts[t]=Object.entries(m).sort().map(([d,a])=>[d,a.reduce((s,r)=>s+r.pr*(r.kg||1),0)/a.reduce((s,r)=>s+(r.kg||1),0)*1000])});
+  const all=[...pts.venda,...pts.compra].map(p=>p[1]);if(!all.length)return'';const mn=Math.min(...all)*.97,mx=Math.max(...all)*1.03,d0=new Date(ps[0]).getTime(),d1=new Date(ps[ps.length-1]).getTime()||d0+1;
+  const X=d=>pad+(new Date(d).getTime()-d0)/(d1-d0||1)*(W-pad-10),Y=v=>H-24-(v-mn)/(mx-mn||1)*(H-40);
+  const linhas=Object.entries(pts).filter(([,a])=>a.length).map(([t,a])=>`<polyline fill="none" stroke="${ser[t]}" stroke-width="2.4" points="${a.map(([d,v])=>X(d).toFixed(1)+','+Y(v).toFixed(1)).join(' ')}"/>${a.map(([d,v])=>`<circle cx="${X(d).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="3.5" fill="${ser[t]}"><title>${t} ${dt(d)}: ${brl(v)}/t</title></circle>`).join('')}`).join('');
+  const ticks=[mn,(mn+mx)/2,mx].map(v=>`<text x="4" y="${Y(v)+4}" font-size="10" fill="currentColor" opacity=".6">${num(v)}</text><line x1="${pad}" x2="${W-10}" y1="${Y(v)}" y2="${Y(v)}" stroke="currentColor" opacity=".08"/>`).join('');
+  return`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto">${ticks}${linhas}<text x="${pad}" y="${H-6}" font-size="10" opacity=".6">${dt(ps[0])}</text><text x="${W-10}" y="${H-6}" font-size="10" text-anchor="end" opacity=".6">${dt(ps[ps.length-1])}</text></svg><div class="mut"><span style="color:#1e4a2e">●</span> venda (média ponderada R$/t) <span style="color:#d4a443;margin-left:12px">●</span> compra</div>`}
+function vMercado(){const L=mercadoLinhas(),ed=nivel('mercado')>=2,med=t=>{const a=L.filter(r=>r.tipo===t&&r.st!=='Perdida');const kg=a.reduce((s,r)=>s+(r.kg||1),0);return a.length?a.reduce((s,r)=>s+r.pr*(r.kg||1),0)/kg:0},mv=med('venda'),mc=med('compra'),pz=t=>{const a=L.filter(r=>r.tipo===t&&r.prazo>=0);return a.length?a.reduce((s,r)=>s+r.prazo,0)/a.length:0};
+  return`<div class="row"><h1>Mercado · histórico de preços</h1><span class="sp"></span>${ed?'<button class="b p" data-a="precoNovo">+ Registrar preço de mercado</button>':''}</div>
+  <p class="mut">Todos os preços praticados: contratos fechados, cotações (abertas e perdidas) e preços de mercado registrados à mão (indicações, concorrentes, praças). Preço, volume, prazo e modalidade, de compradores e vendedores.</p>
+  <section class="panel" style="padding:14px;margin:12px 0"><div class="grid">${fld('Produto',`<select data-mkf="prod">${opts(S.produtos,mkF.prod,()=>true,p=>p.nome,'Todos')}</select>`)}${fld('Lado',`<select data-mkf="tipo"><option value="">Compra e venda</option><option value="compra" ${mkF.tipo==='compra'?'selected':''}>Compra (vendedores)</option><option value="venda" ${mkF.tipo==='venda'?'selected':''}>Venda (compradores)</option></select>`)}
+   ${fld('Situação',`<select data-mkf="st"><option value="">Todas</option>${['Fechado','Cotação','Perdida','Mercado'].map(x=>`<option ${mkF.st===x?'selected':''}>${x}</option>`).join('')}</select>`)}${fld('Praça',`<input data-mkf="praca" value="${h(mkF.praca)}" placeholder="cidade ou UF">`)}${fld('De',`<input type="date" data-mkf="ini" value="${mkF.ini}">`)}${fld('Até',`<input type="date" data-mkf="fim" value="${mkF.fim}">`)}</div></section>
+  <div class="kpis"><div class="kpi"><span>Preço médio de venda</span><b>${mv?brl(mv*1000)+'/t':'—'}</b><span>${mv?brl(mv*60)+'/sc · prazo médio '+num(pz('venda'))+' dias':''}</span></div><div class="kpi"><span>Preço médio de compra</span><b>${mc?brl(mc*1000)+'/t':'—'}</b><span>${mc?brl(mc*60)+'/sc · prazo médio '+num(pz('compra'))+' dias':''}</span></div><div class="kpi"><span>Diferença média</span><b class="${mv-mc>=0?'pos':'neg'}">${mv&&mc?brl((mv-mc)*1000)+'/t':'—'}</b><span>venda − compra (sem frete)</span></div><div class="kpi"><span>Registros</span><b>${L.length}</b><span>${num(L.reduce((s,r)=>s+r.kg,0)/1000)} t</span></div></div>
+  <section class="panel" style="padding:14px;margin:12px 0">${mkF.prod?graficoPreco(L):'<p class="mut">Escolha um produto para ver o gráfico de evolução.</p>'}</section>
+  <section class="panel">${L.length?`<div class="scroll"><table class="stack mini"><thead><tr><th>Data</th><th>Lado</th><th>Produto</th><th>Parte / fonte</th><th>Praça</th><th class="n">Volume</th><th class="n">R$/t</th><th class="n">R$/sc</th><th class="n">Prazo</th><th>Modal.</th><th>Situação</th><th></th></tr></thead><tbody>${L.slice(0,500).map(r=>`<tr><td>${dt(r.d)}</td><td>${r.tipo==='venda'?'Venda':'Compra'}</td><td>${h(nm(S.produtos,r.prod))}</td><td>${h(r.parte)}${r.ref?`<br><span class="mut">${h(r.ref)}</span>`:''}</td><td>${h(r.praca)}</td><td class="n">${r.kg?t_(r.kg):'—'}</td><td class="n"><b>${brl(r.pr*1000)}</b></td><td class="n">${brl(r.pr*60)}</td><td class="n">${r.prazo<0?'antec.':r.prazo+' d'}</td><td>${h(r.modal)}</td><td>${r.st==='Fechado'?'<span class="tag ok">fechado</span>':r.st==='Perdida'?'<span class="tag no">perdida</span>':`<span class="tag">${r.st.toLowerCase()}</span>`}${r.obs?`<br><span class="mut">${h(r.obs)}</span>`:''}</td><td>${ed&&r.fonte==='manual'?`<button class="b sm d" data-precodel="${r.id}">✕</button>`:''}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty"><b>Nenhum preço no período</b></div>'}</section>`}
+function precoModal(){M.innerHTML=`<div class="modal"><div class="card"><h2>Registrar preço de mercado</h2><div class="grid">${fld('Data',`<input type="date" id="pD" value="${TODAY}">`)}${fld('Lado',`<select id="pT"><option value="venda">Venda (preço de comprador)</option><option value="compra">Compra (preço de vendedor)</option></select>`)}${fld('Produto',`<select id="pP">${opts(S.produtos,'',()=>true,p=>p.nome)}</select>`)}
+  ${fld('Preço (R$/t)',`<input id="pR" data-num data-d="2" inputmode="decimal">`)}${fld('Volume (t)',`<input id="pK" data-num data-d="3" inputmode="decimal">`)}${fld('Prazo (dias)',`<input id="pZ" data-num data-d="0" inputmode="numeric" value="0">`)}${fld('Modalidade',`<select id="pM"><option>CIF</option><option>FOB</option></select>`)}${fld('Praça',`<input id="pC" placeholder="Ex.: Uberlândia/MG">`)}${fld('Fonte / parte',`<input id="pF" placeholder="Ex.: corretor, cooperativa X">`)}${fld('Observação',`<input id="pO">`,'','full')}</div>
+  <div class="row" style="margin-top:12px"><span class="sp"></span><button class="b" id="mNo">Cancelar</button><button class="b p" id="mYes">Salvar</button></div></div></div>`;const $=x=>document.getElementById(x);$('mNo').onclick=()=>M.innerHTML='';
+  $('mYes').onclick=()=>{const r={id:uid(),data:$('pD').value,tipo:$('pT').value,prod:$('pP').value,preco:parse($('pR').value)/1000,kg:parse($('pK').value)*1000,prazo:parse($('pZ').value),modal:$('pM').value,praca:$('pC').value.trim(),fonte:$('pF').value.trim(),obs:$('pO').value.trim(),por:S.user};if(!r.prod||!(r.preco>0)||!r.data)return toast('Informe data, produto e preço.');S.precos.push(r);logA('mercado','Registrou preço de mercado',nm(S.produtos,r.prod),`${r.tipo} ${brl(r.preco*1000)}/t · ${r.praca} · ${r.fonte}`,r.id);save();M.innerHTML='';render()}}
+
 if(S.exemplo&&!S.tabDesc.length){const so=S.produtos.find(p=>/soja/i.test(p.nome));if(so)S.tabDesc.push({id:uid(),nome:'Soja – umidade (padrão)',prod:so.id,param:'Umidade',base:14,modo:'prog',faixas:[{de:14,ate:18,f:1.5},{de:18,ate:24,f:2},{de:24,ate:'',f:3}]})}
 if(S.exemplo&&!S.contas.length)S.contas.push({id:uid(),nome:'Conta movimento',banco:'Sicoob',ag:'3001',conta:'12345-6',filial:F0.id,saldoIni:+S.saldoIni||150000,dataIni:addD(TODAY,-30),ativa:true});
 function descTab(t,v){const b=+t.base||0;if(!(v>b))return 0;const fx=(t.faixas||[]).map(f=>({de:+f.de||0,ate:f.ate===''||f.ate==null?Infinity:+f.ate,f:+f.f||0})).sort((a,b)=>a.de-b.de);if(!fx.length)return 0;
@@ -1537,6 +1645,8 @@ function vCfg(){const ed=nivel('config')>=2,T=[['tabelas','Tabelas de desconto']
   else body=`<section class="panel" style="padding:16px"><div class="grid">${fld('Conferência da manhã até',`<input type="time" data-cfg="hM" value="${S.cfg.hM}" ${ed?'':'disabled'}>`)}${fld('Conferência da tarde até',`<input type="time" data-cfg="hT" value="${S.cfg.hT}" ${ed?'':'disabled'}>`)}
     ${fld('Saldo mínimo de alerta (R$)',`<input data-cfg="saldoMin" data-num data-d="2" inputmode="decimal" value="${inp(+S.cfg.saldoMin||0,2)}" ${ed?'':'disabled'}>`,'O fluxo avisa o primeiro dia abaixo dele')}</div>
     <h3>Impostos (Lucro Real)</h3><div class="grid"><div class="f"><label><input type="checkbox" data-cfg="frCred" ${S.cfg.frCred?'checked':''} ${ed?'':'disabled'}> Crédito de PIS/COFINS sobre frete contratado</label><div class="hint">Frota própria não entra. Validar com o contador.</div></div>${fld('PIS (%)',`<input data-cfg="pisAl" data-num data-d="2" inputmode="decimal" value="${inp(S.cfg.pisAl,2)}" ${ed?'':'disabled'}>`)}${fld('COFINS (%)',`<input data-cfg="cofAl" data-num data-d="2" inputmode="decimal" value="${inp(S.cfg.cofAl,2)}" ${ed?'':'disabled'}>`)}</div></section>`;
+  if(cfT==='geral'){const E=S.cfg.empresa,dis=ed?'':'disabled';body=`<section class="panel" style="padding:16px;margin-bottom:14px"><h3 style="margin-top:0">Dados da empresa (cotação e confirmação de negócio)</h3><div class="grid">${[['razao','Razão social'],['cnpj','CNPJ'],['ie','Inscrição estadual'],['end','Endereço'],['bairro','Bairro'],['cidade','Cidade'],['uf','UF'],['cep','CEP'],['tel','Telefone'],['email','E-mail']].map(([k,l])=>fld(l,`<input data-emp="${k}" value="${h(E[k]||'')}" ${dis}>`)).join('')}</div>
+    <h3>Condições especiais padrão</h3><div class="f full"><textarea data-cfg="condEsp" rows="5" ${dis}>${h(S.cfg.condEsp||'')}</textarea><div class="hint">Uma por linha. Saem numeradas na cotação e na confirmação; cada contrato pode editar as suas.</div></div></section>`+body}
   return `<h1>Configurações</h1>${tabs}${body}`}
 function tabModal(t0,copy){const nw=!t0||copy,t=t0?structuredClone(t0):{id:uid(),nome:'',prod:S.produtos[0]?.id||'',param:'Umidade',base:14,modo:'prog',faixas:[{de:14,ate:'',f:1}]};if(copy){t.id=uid();t.nome+=' (cópia)'}
   const draw=()=>{const qs=parseQual(by(S.produtos,t.prod)?.qual).map(q=>q.nome);
@@ -1683,7 +1793,7 @@ function vCargaCampo(){const g=ui.carga,n=ui.neg,up=(cat,lab)=>`<label class="b 
 const nextSeq=p=>Math.max(0,...[...S.contratos,...S.negocios].map(o=>{const m=new RegExp('^'+p+'-(?:[A-Z]+-)?(\\d+)$').exec(o.cod||'');return m?+m[1]:0}))+1;
 const nextNum=(arr,pre)=>arr.reduce((m,x)=>Math.max(m,parseInt(String(x.cod).replace(/\D/g,''))||0),0)+1;
 document.addEventListener('click',e=>{
-  const t=e.target.closest('[data-openg],[data-rdel],[data-aprova],[data-recusa],[data-tadd],[data-tdel],[data-sdel],[data-sopen],[data-sdelsav],[data-openp],[data-msgl],[data-delloc],[data-a],[data-open],[data-openn],[data-add],[data-del],[data-dell],[data-cad],[data-ce],[data-cd],[data-ct],[data-msg],[data-unlink],[data-editg],[data-viewdoc],[data-deldoc],[data-tkok],[data-tkno],[data-bx],[data-estorno],[data-comp],[data-titedit],[data-titdel],[data-fint],[data-relt],[data-ratl],[data-qdel],[data-comall],[data-compay],[data-cft2],[data-tabed],[data-tabcp],[data-tabdel],[data-ctaed],[data-conf],[data-impdel],[data-goto],[data-fxv],[data-fxk],[data-adv],[data-cst]');if(!t)return;
+  const t=e.target.closest('[data-openg],[data-rdel],[data-aprova],[data-recusa],[data-tadd],[data-tdel],[data-sdel],[data-sopen],[data-sdelsav],[data-openp],[data-msgl],[data-delloc],[data-a],[data-open],[data-openn],[data-add],[data-del],[data-dell],[data-cad],[data-ce],[data-cd],[data-ct],[data-msg],[data-unlink],[data-editg],[data-viewdoc],[data-deldoc],[data-tkok],[data-tkno],[data-bx],[data-estorno],[data-comp],[data-titedit],[data-titdel],[data-fint],[data-relt],[data-ratl],[data-qdel],[data-comall],[data-compay],[data-cft2],[data-tabed],[data-tabcp],[data-tabdel],[data-ctaed],[data-conf],[data-impdel],[data-goto],[data-fxv],[data-fxk],[data-adv],[data-cst],[data-cott],[data-cotpdf],[data-cotok],[data-cotno],[data-precodel]');if(!t)return;
   const a=t.dataset.a,d=CADS[ui.cad],ds=t.dataset;
   if(ds.openg){const[nid,gid]=ds.openg.split('|');if(!(ui.v==='negocios'&&ui.neg?.id===nid))ui.neg=structuredClone(by(S.negocios,nid));ui.carga=structuredClone(ui.neg.cargas.find(g=>g.id===gid));render();return}
   if(ds.cft){cf.tab=ds.cft;render();return}
@@ -1723,7 +1833,12 @@ document.addEventListener('click',e=>{
   if(ds.delloc){const x=ui.cadEdit._locs[+ds.delloc];if(S.contratos.some(c=>c.local===x.id))return aviso('Este local está em uso em contratos e não pode ser removido.');ui.cadEdit._locs.splice(+ds.delloc,1);render();return}
   if(ds.viewdoc){e.preventDefault();const[tg,id]=ds.viewdoc.split('|');docModal(tgtObj(tg).docs.find(x=>x.id===id));return}
   if(ds.deldoc){e.preventDefault();const[tg,id]=ds.deldoc.split('|'),o=tgtObj(tg);o.docs=o.docs.filter(x=>x.id!==id);if(tg==='n'){const st=by(S.negocios,o.id);if(st){st.docs=structuredClone(o.docs);save()}}render();return}
-  if(ds.open){const c=by(S.contratos,ds.open);ui.v='contratos';ui.ct=c.tipo;ui.draft=structuredClone(c);render();scrollTo(0,0);return}
+  if(ds.cott){cotF.tipo=ds.cott;render();return}
+  if(ds.cotpdf){const c=by(S.contratos,ds.cotpdf);saveDoc(`Cotacao-${c.cod}.html`,confDoc(c));return}
+  if(ds.cotok){if(nivel('cot')<2)return;cotFechar(ds.cotok);return}
+  if(ds.cotno){if(nivel('cot')<2)return;cotPerder(ds.cotno);return}
+  if(ds.precodel){if(nivel('mercado')<2)return;ask('Excluir este preço de mercado?',()=>{S.precos=S.precos.filter(x=>x.id!==ds.precodel);save();render()});return}
+  if(ds.open){const c=by(S.contratos,ds.open);ui.v=COT.includes(c.status)?'cot':'contratos';ui.ct=c.tipo;ui.draft=structuredClone(c);render();scrollTo(0,0);return}
   if(ds.openn){ui.v='negocios';ui.neg=structuredClone(by(S.negocios,ds.openn));ui.carga=null;render();scrollTo(0,0);return}
   if(ds.ct){ui.ct=ds.ct;saveUi();render();return}
   if(ds.msg){msgModal(by(S.locais,ds.msg));return}
@@ -1736,7 +1851,7 @@ document.addEventListener('click',e=>{
   if(ds.cad){ui.cad=ds.cad;ui.cadEdit=null;saveUi();render();return}
   if(ds.ce){ui.cadEdit=structuredClone(by(S[d.k],ds.ce));if(d.k==='parceiros')ui.cadEdit._locs=structuredClone(S.locais.filter(l=>l.parc===ds.ce));render();scrollTo(0,0);return}
   if(ds.cd){const id=ds.cd;if(emUso(d.k,id))return aviso('Este cadastro está em uso e não pode ser excluído.');if(d.k==='parceiros'&&S.locais.some(l=>l.parc===id&&S.contratos.some(c=>c.local===l.id)))return aviso('Um local deste parceiro está em uso em contratos.');ask('Excluir este cadastro?'+(d.k==='parceiros'?' Os locais dele também serão excluídos.':''),()=>{logA('exc','Excluiu cadastro',nm(S[d.k],id)==='—'?(by(S[d.k],id)?.placa||id):nm(S[d.k],id),d.t||d.k,id);S[d.k]=S[d.k].filter(x=>x.id!==id);if(d.k==='parceiros')S.locais=S.locais.filter(l=>l.parc!==id);save();render()});return}
-  const GUARD={novo:'contratos',salvar:'contratos',excluir:'contratos',addL:'contratos',novoN:'negocios',salvarN:'negocios',excluirN:'negocios',linkC:'negocios',linkV:'negocios',addRota:'negocios',simFechar:'negocios',salvarG:'cargas',importar:'backup',limpar:'backup'};
+  const GUARD={novaCot:'cot',novo:'contratos',salvar:'contratos',excluir:'contratos',addL:'contratos',novoN:'negocios',salvarN:'negocios',excluirN:'negocios',linkC:'negocios',linkV:'negocios',addRota:'negocios',simFechar:'negocios',salvarG:'cargas',importar:'backup',limpar:'backup'};
   if(a&&GUARD[a]&&nivel(GUARD[a])<2)return toast('Seu perfil não permite esta ação.');
   if((a==='cadNew'||a==='cadSave')&&!podeCad())return toast('Seu perfil não permite alterar este cadastro.');
   if(['novaG','novaGsel','pickOk','excluirG'].includes(a)&&!criaCarga())return toast('Cargas são abertas pela logística ou pela gestão.');
@@ -1744,6 +1859,9 @@ document.addEventListener('click',e=>{
   switch(a){
   case 'novo':ui.draft=blankC(ui.ct,nextSeq(ui.ct==='compra'?'CC':'CV'));render();scrollTo(0,0);break;
   case 'voltar':ui.draft=null;render();break;
+  case 'confDoc':{const c=ui.draft;if(!S.contratos.some(x=>x.id===c.id))return aviso('Salve antes de gerar o documento.');saveDoc(`${COT.includes(c.status)?'Cotacao':'Confirmacao'}-${c.cod}.html`,confDoc(by(S.contratos,c.id)));break}
+  case 'novaCot':{if(!filOk())return;const p=cotF.tipo==='compra'?'QC':'QV',d=blankC(cotF.tipo,nextSeq(p));d.cod=p+'-'+curSig()+'-'+String(nextSeq(p)).padStart(4,'0');d.status='Cotação';d.validade=addD(TODAY,2);ui.draft=d;render();scrollTo(0,0);break}
+  case 'precoNovo':if(nivel('mercado')<2)return;precoModal();break;
   case 'addL':ui.draft.lanc.push({id:uid(),data:TODAY,valor:0,obs:''});render();break;
   case 'salvar':{const c=ui.draft;
     if(!c.cod.trim())return aviso('Informe o código do contrato.');
@@ -1827,6 +1945,8 @@ function bind(t){const[tg,path]=t.dataset.b.split(':'),o=tgtObj(tg);if(!o)return
   if(tg==='c'&&(path==='cam.liq'||path==='cam.pbtc')){const li=document.getElementById('liqInfo');if(li)li.innerHTML=liqTxt(o.cam)}}
 document.addEventListener('input',e=>{
   const t=e.target;
+  if(t.dataset.cotf==='q'){cotF.q=t.value;const pos=t.selectionStart;render();const n=document.querySelector('[data-cotf="q"]');n.focus();n.setSelectionRange(pos,pos);return}
+  if(t.dataset.mkf==='praca')return;
   if(t.id==='fq'){filtro.q=t.value;const pos=t.selectionStart;render();const n=document.getElementById('fq');n.focus();n.setSelectionRange(pos,pos);return}
   if(t.id==='sIni'){S.saldoIni=parse(t.value);save();return}
   if(t.id==='cq'){cf.q=t.value;const pos=t.selectionStart;render();const n=document.getElementById('cq');n.focus();n.setSelectionRange(pos,pos);return}
@@ -1844,6 +1964,9 @@ document.addEventListener('focusout',e=>{const t=e.target;if(!t.matches?.(NUMSEL
 document.addEventListener('change',e=>{
   const t=e.target;
   if(t.id==='fst'){filtro.st=t.value;render();return}
+  if(t.dataset.cotf==='st'){cotF.st=t.value;render();return}
+  if(t.dataset.mkf){mkF[t.dataset.mkf]=t.value;render();return}
+  if(t.dataset.emp){if(nivel('config')<2)return;S.cfg.empresa[t.dataset.emp]=t.value;logA('cad','Alterou dados da empresa',t.dataset.emp,t.value);save();return}
   if(t.id==='fper'){fper=t.value;render();return}
   if(t.id==='ffl'){fx2.fil=t.value;render();return}
   if(t.id==='fxH'){fx2.hor=+t.value;render();return}
@@ -1917,7 +2040,7 @@ AU.onAuthStateChanged(auth,async u=>{
   if(!u){const m=sessionStorage.getItem('pn-msg');sessionStorage.removeItem('pn-msg');return login(m||'')}
   const t0=+localStorage.getItem('pn-login')||0;if(!t0)localStorage.setItem('pn-login',Date.now());else if(Date.now()-t0>14*3600e3)return sair('Sessão encerrada depois de 14 h. Entre de novo.');
   const em=(u.email||'').toLowerCase();carregando('Abrindo o sistema…');
-  try{const [md,cd]=await Promise.all([F.getDoc(dref('usuarios',em)),F.getDoc(dref('config','geral')).catch(()=>null)]);
+  try{const nada={exists:()=>false,data:()=>({})},[md,cd]=await Promise.all([F.getDoc(dref('usuarios',em)).catch(e=>{if(e?.code==='permission-denied')return nada;throw e}),F.getDoc(dref('config','geral')).catch(()=>null)]);
     if(!md.exists()){
       if(!cd||!cd.exists()){if(window.OWNER&&window.OWNER.toLowerCase()!==em){await AU.signOut(auth);return login('Sistema ainda não configurado. O primeiro acesso deve ser feito pelo e-mail do responsável.')}return primeira(em)}
       await AU.signOut(auth);return login('Seu e-mail não está cadastrado na Pronutre. Peça à Gestão para cadastrar.')}
@@ -1930,7 +2053,7 @@ function primeira(em){tela(`<h2>Primeira configuração</h2><p class="lgmsg">Voc
 async function iniciar(em,me,cfg,novo){
   const lvl=m=>me.papel==='Gestão'||novo?2:(cfg?.acessos?.[me.papel]?.[m]??0),finR=()=>lvl('fin')>=1||lvl('fluxo')>=1;
   const COLS=[['contratos'],['negocios'],['cargas'],['parceiros'],['locais'],['motoristas'],['corretores'],['produtos'],['usuarios'],['tabDesc'],['config'],
-    ['simulacoes',()=>lvl('calc')>=1],['titulos',finR],['contas',finR],['confs',finR],['comPg',finR],['impAj',()=>lvl('imp')>=1||finR()],['log',()=>lvl('hist')>=1]].filter(([,f])=>!f||f()).map(([k])=>k);
+    ['simulacoes',()=>lvl('calc')>=1],['precos',()=>lvl('mercado')>=1],['titulos',finR],['contas',finR],['confs',finR],['comPg',finR],['impAj',()=>lvl('imp')>=1||finR()],['log',()=>lvl('hist')>=1]].filter(([,f])=>!f||f()).map(([k])=>k);
   const cfgDe=o=>({filiais:o.filiais,acessos:o.acessos,cfg:o.cfg,saldoIni:o.saldoIni||0});
   const RAW={},SH={};const dec=(k,d)=>{const x=d.data();return k==='usuarios'||k==='config'?x:JSON.parse(x.j)};
   const montar=k=>{const m=RAW[k]||new Map();
@@ -1950,7 +2073,7 @@ async function iniciar(em,me,cfg,novo){
     if(!S0.filiais){S0.filiais=undefined}}
   const avisados=new Set();
   const coletar=S=>{const out={},mp=(k,arr,key=o=>o.id)=>{const m=new Map();(arr||[]).forEach(o=>{const id=key(o);if(id)m.set(String(id),o)});out[k]=m};
-    ['contratos','parceiros','locais','motoristas','corretores','produtos','tabDesc','simulacoes','titulos','contas','confs','impAj','log'].forEach(k=>mp(k,S[k]));
+    ['contratos','parceiros','locais','motoristas','corretores','produtos','tabDesc','precos','simulacoes','titulos','contas','confs','impAj','log'].forEach(k=>mp(k,S[k]));
     mp('usuarios',S.usuarios,o=>(o.email||'').trim().toLowerCase());
     mp('negocios',(S.negocios||[]).map(n=>{const{cargas,...r}=n;return r}));
     mp('cargas',(S.negocios||[]).flatMap(n=>(n.cargas||[]).map(g=>({...g,negId:n.id}))));

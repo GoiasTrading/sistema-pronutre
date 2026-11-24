@@ -17,17 +17,19 @@ service cloud.firestore {
           || (c in ['titulos', 'contas', 'confs', 'comPg'] && finR())
           || (c == 'impAj' && (lvl('imp') >= 1 || finR()))
           || (c == 'simulacoes' && lvl('calc') >= 1)
+          || (c == 'precos' && lvl('mercado') >= 1)
           || (c == 'log' && lvl('hist') >= 1);
       }
       function canWrite(c) {
         return (c in ['negocios', 'cargas'] && (lvl('cargas') >= 2 || lvl('negocios') >= 2 || lvl('fin') >= 2))
-          || (c == 'contratos' && (lvl('contratos') >= 2 || lvl('fin') >= 2 || lvl('aprov') >= 2))
+          || (c == 'contratos' && (lvl('contratos') >= 2 || lvl('cot') >= 2 || lvl('fin') >= 2 || lvl('aprov') >= 2))
           || (c in ['parceiros', 'locais', 'motoristas', 'corretores', 'produtos'] && (lvl('cadastros') >= 2 || me().papel == 'Logística'))
           || (c == 'tabDesc' && lvl('config') >= 2)
           || (c in ['titulos', 'confs', 'comPg'] && lvl('fin') >= 2)
           || (c == 'contas' && (lvl('fin') >= 2 || lvl('config') >= 2))
           || (c == 'impAj' && lvl('imp') >= 2)
-          || (c == 'simulacoes' && lvl('calc') >= 1);
+          || (c == 'simulacoes' && lvl('calc') >= 1)
+          || (c == 'precos' && lvl('mercado') >= 2);
       }
 
       // configuração geral (filiais, matriz de acessos, parâmetros)
