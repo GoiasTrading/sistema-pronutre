@@ -60,6 +60,11 @@ jobs:
           if d.get("project_id") != os.environ["PID"]: print("::error::A chave é do projeto", d.get("project_id"), "e o FIREBASE_PROJECT_ID é", os.environ["PID"]); sys.exit(1)
           print("chave ok:", d.get("client_email"))
           PY
-      - name: Publicar site e regras do banco
+      - name: Publicar o site
         env: { GOOGLE_APPLICATION_CREDENTIALS: "${{ runner.temp }}/sa.json" }
-        run: npx -y firebase-tools@13 deploy --only hosting,firestore:rules --project "${{ secrets.FIREBASE_PROJECT_ID || vars.FIREBASE_PROJECT_ID || 'pronutre-erp' }}" --non-interactive
+        run: npx -y firebase-tools@13 deploy --only hosting --project "${{ secrets.FIREBASE_PROJECT_ID || vars.FIREBASE_PROJECT_ID || 'pronutre-erp' }}" --non-interactive
+      - name: Publicar as regras do banco
+        env: { GOOGLE_APPLICATION_CREDENTIALS: "${{ runner.temp }}/sa.json" }
+        run: |
+          if npx -y firebase-tools@13 deploy --only firestore:rules --project "${{ secrets.FIREBASE_PROJECT_ID || vars.FIREBASE_PROJECT_ID || 'pronutre-erp' }}" --non-interactive; then echo "regras publicadas"
+          else echo "::warning::As regras do banco não foram publicadas (a conta de serviço precisa da função Firebase Admin ou cole firestore.rules no console: Firestore > Regras)."; fi
