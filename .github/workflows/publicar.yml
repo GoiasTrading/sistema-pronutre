@@ -37,7 +37,7 @@ jobs:
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
+          projectId: ${{ secrets.FIREBASE_PROJECT_ID || vars.FIREBASE_PROJECT_ID || 'pronutre-erp' }}
           expires: 7d
 
   producao:
@@ -49,9 +49,9 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: "20" }
       - name: Conferir a chave de serviço (sem mostrar o conteúdo)
-        env: { PID: "${{ secrets.FIREBASE_PROJECT_ID }}", SA: "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" }
+        env: { PID: "${{ secrets.FIREBASE_PROJECT_ID || vars.FIREBASE_PROJECT_ID || 'pronutre-erp' }}", SA: "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" }
         run: |
-          if [ -z "$PID" ] || [ -z "$SA" ]; then echo "::error::Faltam os segredos FIREBASE_PROJECT_ID e/ou FIREBASE_SERVICE_ACCOUNT no repositório."; exit 1; fi
+          if [ -z "$SA" ]; then echo "::error::Falta o segredo FIREBASE_SERVICE_ACCOUNT (Settings > Secrets and variables > Actions > aba Secrets > Repository secrets)."; exit 1; fi
           printf '%s' "$SA" > "$RUNNER_TEMP/sa.json"
           python3 - "$RUNNER_TEMP/sa.json" <<'PY'
           import json, os, sys
@@ -62,4 +62,4 @@ jobs:
           PY
       - name: Publicar site e regras do banco
         env: { GOOGLE_APPLICATION_CREDENTIALS: "${{ runner.temp }}/sa.json" }
-        run: npx -y firebase-tools@13 deploy --only hosting,firestore:rules --project "${{ secrets.FIREBASE_PROJECT_ID }}" --non-interactive
+        run: npx -y firebase-tools@13 deploy --only hosting,firestore:rules --project "${{ secrets.FIREBASE_PROJECT_ID || vars.FIREBASE_PROJECT_ID || 'pronutre-erp' }}" --non-interactive
