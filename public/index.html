@@ -1917,7 +1917,7 @@ AU.onAuthStateChanged(auth,async u=>{
   if(!u){const m=sessionStorage.getItem('pn-msg');sessionStorage.removeItem('pn-msg');return login(m||'')}
   const t0=+localStorage.getItem('pn-login')||0;if(!t0)localStorage.setItem('pn-login',Date.now());else if(Date.now()-t0>14*3600e3)return sair('Sessão encerrada depois de 14 h. Entre de novo.');
   const em=(u.email||'').toLowerCase();carregando('Abrindo o sistema…');
-  try{const [md,cd]=await Promise.all([F.getDoc(dref('usuarios',em)),F.getDoc(dref('config','geral')).catch(()=>null)]);
+  try{const nada={exists:()=>false,data:()=>({})},[md,cd]=await Promise.all([F.getDoc(dref('usuarios',em)).catch(e=>{if(e?.code==='permission-denied')return nada;throw e}),F.getDoc(dref('config','geral')).catch(()=>null)]);
     if(!md.exists()){
       if(!cd||!cd.exists()){if(window.OWNER&&window.OWNER.toLowerCase()!==em){await AU.signOut(auth);return login('Sistema ainda não configurado. O primeiro acesso deve ser feito pelo e-mail do responsável.')}return primeira(em)}
       await AU.signOut(auth);return login('Seu e-mail não está cadastrado na Pronutre. Peça à Gestão para cadastrar.')}

@@ -32,7 +32,7 @@ service cloud.firestore {
 
       // configuração geral (filiais, matriz de acessos, parâmetros)
       match /config/{d} {
-        allow read: if member();
+        allow read: if member() || (request.auth != null && !exists(cfgPath()));
         allow create: if request.auth != null && d == 'geral' && !exists(cfgPath())
                       && getAfter(uPath()).data.papel == 'Gestão';
         allow update: if gestao()
@@ -44,7 +44,7 @@ service cloud.firestore {
 
       // usuários: id do documento = e-mail em minúsculas
       match /usuarios/{u} {
-        allow read: if member();
+        allow read: if member() || (request.auth != null && request.auth.token.email != null && u == em());
         allow create: if gestao()
                       || (request.auth != null && u == em() && em() == 'sistemas@pronutre.com.br'
                           && !exists(cfgPath()) && request.resource.data.papel == 'Gestão');
