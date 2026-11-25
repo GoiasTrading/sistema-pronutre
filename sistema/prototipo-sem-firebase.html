@@ -210,6 +210,7 @@ header.top .pdfb .sm{display:none}.clg{display:grid;grid-template-columns:repeat
   <a href="#negocios" data-v="negocios">Negócios</a>
   <a href="#cargas" data-v="cargas">Cargas</a>
   <a href="#campo" data-v="campo">Campo (celular)</a>
+  <a href="#mapa" data-v="mapa">Mapa logístico ↗</a>
   <a href="#logistica" data-v="logistica">Logística</a>
   <a href="#cot" data-v="cot">Cotações</a>
   <a href="#contratos" data-v="contratos">Contratos</a>
@@ -341,7 +342,7 @@ if(!S.usuarios){S.usuarios=[{id:uid(),nome:'Gestão',papel:'Gestão'},{id:uid(),
   const old=new Date(Date.now()-60*3600e3).toISOString();[...S.contratos,...S.negocios].forEach(o=>{o.aprov??={st:'aprovado',lancPor:'Gestão',lancEm:old,por:'Ana (Comercial)',em:old}});
   const n2=S.negocios[1];if(n2&&S.exemplo)n2.aprov={st:'pendente',lancPor:'Bruno (Logística)',lancEm:new Date(Date.now()-20*3600e3).toISOString()};
   const c2=S.contratos.find(c=>c.cod==='CV-0002');if(c2&&S.exemplo)c2.aprov={st:'pendente',lancPor:'Bruno (Logística)',lancEm:new Date(Date.now()-52*3600e3).toISOString()}}
-const APROVA=['Gestão','Comercial'],PAPEIS_U=['Gestão','Comercial','Financeiro','Logística','Operacional','Servidor'];
+const APROVA=['Gestão','Comercial'],PAPEIS_U=['Gestão','Diretoria','Comercial','Financeiro','Logística','Operacional','Servidor'];
 const curU=()=>S.usuarios.find(u=>u.nome===S.user)||S.usuarios[0];
 const podeAprovar=o=>APROVA.includes(curU()?.papel)&&o.aprov?.lancPor!==S.user;
 const prazoAp=o=>{const lim=new Date(o.aprov.lancEm).getTime()+48*3600e3,hrs=Math.round((lim-Date.now())/3600e3);return{lim,hrs,atras:hrs<0}};
@@ -369,12 +370,13 @@ const allCargasF=()=>NGS().flatMap(n=>n.cargas.map(g=>({...g,neg:n})));
 const filOk=()=>{if(S.filial==='todas'){toast('Escolha uma filial no topo para lançar.');return false}return true};
 const minhasFiliais=()=>curU()?.papel==='Gestão'?S.filiais:S.filiais.filter(f=>(curU()?.filiais||[]).includes(f.id));
 /* ---------- acessos ---------- */
-const MODS=[['painel','Painel'],['negocios','Negócios'],['cargas','Cargas'],['logistica','Logística'],['contratos','Contratos'],['cot','Cotações'],['mercado','Mercado (preços)'],['calc','Calculadora'],['campo','Campo'],['aprov','Aprovações'],['fin','Financeiro'],['fluxo','Fluxo de caixa'],['dre','DRE gerencial'],['imp','Impostos'],['rel','Relatórios'],['hist','Histórico'],['config','Configurações'],['cadastros','Cadastros'],['backup','Cópia de segurança']];
-const ACESSOS0=()=>({Comercial:{painel:2,negocios:2,cargas:1,logistica:1,contratos:2,cot:2,mercado:2,calc:2,aprov:2,fin:1,dre:1,fluxo:0,rel:1,hist:0,campo:1,imp:1,config:2,cadastros:2,backup:0,valores:true},
-  Financeiro:{painel:1,negocios:1,cargas:1,logistica:1,contratos:1,cot:1,mercado:1,calc:0,aprov:0,fin:2,dre:1,fluxo:2,rel:1,hist:0,campo:0,imp:2,config:2,cadastros:1,backup:0,valores:true},
-  Logística:{painel:1,negocios:1,cargas:2,logistica:2,contratos:0,cot:0,mercado:0,calc:0,aprov:0,fin:0,dre:0,fluxo:0,rel:1,hist:0,campo:2,imp:0,config:0,cadastros:1,backup:0,valores:false},
-  Operacional:{painel:1,negocios:0,cargas:2,logistica:1,contratos:0,cot:0,mercado:0,calc:0,aprov:0,fin:0,dre:0,fluxo:0,rel:1,hist:0,campo:2,imp:0,config:0,cadastros:1,backup:0,valores:false},
-  Servidor:{painel:1,negocios:1,cargas:1,logistica:1,contratos:1,cot:1,mercado:1,calc:1,aprov:0,fin:1,fluxo:1,dre:0,rel:1,hist:1,campo:0,imp:1,config:1,cadastros:1,backup:1,valores:true}});
+const MODS=[['painel','Painel'],['negocios','Negócios'],['cargas','Cargas'],['logistica','Logística'],['mapa','Mapa logístico'],['contratos','Contratos'],['cot','Cotações'],['mercado','Mercado (preços)'],['calc','Calculadora'],['campo','Campo'],['aprov','Aprovações'],['fin','Financeiro'],['fluxo','Fluxo de caixa'],['dre','DRE gerencial'],['imp','Impostos'],['rel','Relatórios'],['hist','Histórico'],['config','Configurações'],['cadastros','Cadastros'],['backup','Cópia de segurança']];
+const ACESSOS0=()=>({Comercial:{painel:2,negocios:2,cargas:1,mapa:0,logistica:1,contratos:2,cot:2,mercado:2,calc:2,aprov:2,fin:1,dre:1,fluxo:0,rel:1,hist:0,campo:1,imp:1,config:2,cadastros:2,backup:0,valores:true},
+  Financeiro:{painel:1,negocios:1,cargas:1,mapa:0,logistica:1,contratos:1,cot:1,mercado:1,calc:0,aprov:0,fin:2,dre:1,fluxo:2,rel:1,hist:0,campo:0,imp:2,config:2,cadastros:1,backup:0,valores:true},
+  Logística:{painel:1,negocios:1,cargas:2,mapa:0,logistica:2,contratos:0,cot:0,mercado:0,calc:0,aprov:0,fin:0,dre:0,fluxo:0,rel:1,hist:0,campo:2,imp:0,config:0,cadastros:1,backup:0,valores:false},
+  Operacional:{painel:1,negocios:0,cargas:2,mapa:0,logistica:1,contratos:0,cot:0,mercado:0,calc:0,aprov:0,fin:0,dre:0,fluxo:0,rel:1,hist:0,campo:2,imp:0,config:0,cadastros:1,backup:0,valores:false},
+  Servidor:{painel:1,negocios:1,cargas:1,mapa:0,logistica:1,contratos:1,cot:1,mercado:1,calc:1,aprov:0,fin:1,fluxo:1,dre:0,rel:1,hist:1,campo:0,imp:1,config:1,cadastros:1,backup:1,valores:true},
+  Diretoria:{painel:1,negocios:1,cargas:1,logistica:1,mapa:1,contratos:1,cot:1,mercado:1,calc:1,aprov:0,fin:1,fluxo:1,dre:1,rel:1,hist:1,campo:0,imp:1,config:0,cadastros:1,backup:0,valores:true}});
 if(!S.acessos)S.acessos=ACESSOS0();
 {const A0=ACESSOS0();Object.keys(A0).forEach(p=>{S.acessos[p]??={};Object.entries(A0[p]).forEach(([k,v])=>{if(!(k in S.acessos[p]))S.acessos[p][k]=v})})}
 const gestao=()=>curU()?.papel==='Gestão';
@@ -507,15 +509,15 @@ function filialModal(){M.innerHTML=`<div class="modal"><div class="card"><h2>Nov
   const $=id=>document.getElementById(id);$('fnN').oninput=e=>{if(!$('fnC').value||$('fnC').dataset.auto){$('fnC').value=e.target.value;$('fnC').dataset.auto=1}};
   $('mNo').onclick=()=>M.innerHTML='';$('mYes').onclick=()=>{const nome=$('fnN').value.trim(),sig=$('fnS').value.trim().toUpperCase().replace(/[^A-Z]/g,'');
     if(!nome||sig.length<2)return $('fnM').innerHTML='<b class="neg">Informe o nome e a sigla.</b>';if(S.filiais.some(f=>f.sigla===sig))return $('fnM').innerHTML='<b class="neg">Já existe filial com essa sigla.</b>';
-    const nf={id:uid(),nome,cidade:$('fnC').value.trim()||nome,uf:$('fnU').value,sigla:sig,matriz:false};S.filiais.push(nf);S.usuarios.forEach(u=>{if(u.papel==='Gestão')u.filiais=[...new Set([...(u.filiais||[]),nf.id])]});S.filial=nf.id;logA('acesso','Criou filial',sig+' · '+nome,nf.cidade+'/'+nf.uf,nf.id);save();M.innerHTML='';render();toast(`Filial ${nome} (${sig}) criada.`)}}
+    const nf={id:uid(),nome,cidade:$('fnC').value.trim()||nome,uf:$('fnU').value,sigla:sig,matriz:false};S.filiais.push(nf);setTimeout(()=>geoPreencher('filiais',nf.id),500);S.usuarios.forEach(u=>{if(u.papel==='Gestão')u.filiais=[...new Set([...(u.filiais||[]),nf.id])]});S.filial=nf.id;logA('acesso','Criou filial',sig+' · '+nome,nf.cidade+'/'+nf.uf,nf.id);save();M.innerHTML='';render();toast(`Filial ${nome} (${sig}) criada.`)}}
 const fillUsr=()=>{if(FB){S.user=FB.me.nome;usr.innerHTML=`<option>${h(S.user)}</option>`;usr.disabled=true;return}if(!S.usuarios.some(u=>u.nome===S.user))S.user=S.usuarios[0]?.nome||'Gestão';usr.innerHTML=S.usuarios.map(u=>`<option ${u.nome===S.user?'selected':''}>${h(u.nome)}</option>`).join('')};fillUsr();
 usr.addEventListener('change',()=>{S.user=usr.value;save();render();checkFirst()});
 if(FB){const b=document.createElement('button');b.type='button';b.className='pdfb';b.textContent='Sair';b.onclick=()=>ask('Sair do sistema? Os dados guardados neste aparelho são apagados.',()=>FB.logout());usr.after(b)}
 function render(){
   document.querySelectorAll('#nav a').forEach(b=>b.classList.toggle('on',b.dataset.v===ui.v));
-  const V={painel:()=>heroP()+pendBox()+vPainel(),campo:vCampo,imp:vImp,config:vCfg,negocios:()=>ui.neg?vNeg():vNegocios(),contratos:()=>ui.draft?vEditor():vContratos(),cot:()=>ui.draft?vEditor():vCot(),mercado:vMercado,dre:vDre,cargas:vCargasMod,logistica:vLog,calc:vCalc,aprov:vAprov,fin:vFin,rel:vRel,hist:vHist,fluxo:vFluxo,cadastros:vCad,backup:vBackup};
+  const V={painel:()=>heroP()+pendBox()+vPainel(),campo:vCampo,imp:vImp,config:vCfg,negocios:()=>ui.neg?vNeg():vNegocios(),contratos:()=>ui.draft?vEditor():vContratos(),cot:()=>ui.draft?vEditor():vCot(),mercado:vMercado,dre:vDre,mapa:()=>{setTimeout(()=>{location.href='mapa/'},50);return'<h1>Mapa logístico</h1><p class="mut">Abrindo o mapa em tela cheia…</p>'},cargas:vCargasMod,logistica:vLog,calc:vCalc,aprov:vAprov,fin:vFin,rel:vRel,hist:vHist,fluxo:vFluxo,cadastros:vCad,backup:vBackup};
   if(nivel(ui.v)<1){const f=MODS.find(([k])=>nivel(k)>=1);ui.v=f?f[0]:'painel'}
-  document.querySelectorAll('#nav a').forEach(b=>{b.hidden=nivel(b.dataset.v)<1;b.classList.toggle('on',b.dataset.v===ui.v)});
+  document.querySelectorAll('#nav a').forEach(b=>{b.hidden=!!b.dataset.v&&nivel(b.dataset.v)<1;b.classList.toggle('on',b.dataset.v===ui.v)});
   const B=document.body.classList;B.toggle('pn-neg',nivel('negocios')<2);B.toggle('pn-ctr',nivel('contratos')<2);B.toggle('pn-cg',!criaCarga());B.toggle('pn-cge',nivel('cargas')<2);B.toggle('pn-cad',!podeCad());B.toggle('pn-bk',nivel('backup')<2);
   fillUsr();fillFil();app.innerHTML=(V[ui.v]||vPainel)();upd();const n=pendentes().length+tkLista().length;document.getElementById('aprCnt').innerHTML=n?`<span class="nav-n">${n}</span>`:'';renderDrawer();
 }
@@ -999,11 +1001,11 @@ function fxTable(items,start){
 /* ---------- cadastros ---------- */
 const PF=[['nome','Razão social / nome'],['fantasia','Nome fantasia / apelido'],['tipo','Pessoa',['PJ','PF']],['doc','CPF / CNPJ'],['ie','Inscrição estadual'],['papeis','Papéis','CHK'],['limite','Limite de crédito (R$, cliente)','NUM'],
   ['cnae','Atividade principal (CNAE)','',''],['cnaeSec','Atividades secundárias (CNAE) — uma por linha','TXT'],['rntrc','RNTRC (transportadora)'],
-  ['end','Endereço'],['bairro','Bairro'],['cidade','Cidade'],['cep','CEP'],['uf','UF',['',...UFS]],['tel','Telefone / WhatsApp'],['email','E-mail'],['contato','Pessoa de contato'],
+  ['end','Endereço'],['bairro','Bairro'],['cidade','Cidade'],['cep','CEP'],['geo','Localização no mapa','GEO'],['uf','UF',['',...UFS]],['tel','Telefone / WhatsApp'],['email','E-mail'],['contato','Pessoa de contato'],
   ['_h','Dados de pagamento','SEC'],['banco','Banco'],['agencia','Agência'],['conta','Conta'],['tipoConta','Tipo de conta',['Corrente','Poupança','Pagamento']],['pix','Chave PIX'],['titular','Titular da conta'],['docTitular','CPF / CNPJ do titular'],['obs','Observações','TXT'],['_locs','Locais de carregamento e descarga','LOCS'],['docs','Documentos','DOCS:P']];
 const UF_=[['nome','Nome de usuário'],['email','E-mail de login'],['ativo','Acesso',['Sim','Não']],['nomeCompleto','Nome completo (vai na assinatura)'],['papel','Papel',PAPEIS_U],['cargo','Cargo'],['filiais','Filiais em que trabalha','FIL'],['_sig','Assinatura','SIG']];
 const CF=[['nome','Nome / razão social'],['tipo','Pessoa',['PF','PJ']],['doc','CPF / CNPJ'],['tel','Telefone / WhatsApp'],['email','E-mail'],['nf','Nota fiscal','NF'],['_h','Dados de pagamento','SEC'],['banco','Banco'],['agencia','Agência'],['conta','Conta'],['tipoConta','Tipo de conta',['Corrente','Poupança','Pagamento']],['pix','Chave PIX'],['titular','Titular da conta'],['docTitular','CPF / CNPJ do titular'],['obs','Observações','TXT'],['docs','Documentos','DOCS:C']];
-const LF=[['nome','Nome do local'],['parc','Parceiro dono do local','PARC'],['usos','Uso','USO'],['end','Endereço / referência'],['cidade','Cidade'],['uf','UF',['',...UFS]],
+const LF=[['nome','Nome do local'],['parc','Parceiro dono do local','PARC'],['usos','Uso','USO'],['end','Endereço / referência'],['cidade','Cidade'],['uf','UF',['',...UFS]],['geo','Localização no mapa','GEO'],
   ['coord','Localização','COORD'],['contato','Contato no local'],['tel','Telefone do local'],['horario','Horário de carga/descarga'],['obsMot','Instruções para o motorista','TXT']];
 const MF=[['nome','Nome completo'],['cpf','CPF'],['cnh','Nº da CNH'],['cnhCat','Categoria CNH',['E','D','C','B']],['cnhVal','Validade da CNH','DATE'],['tel','Telefone / WhatsApp'],['transp','Transportadora','TRANSP'],['cam','Caminhão','CAM'],['_h','Dados de pagamento','SEC'],['banco','Banco'],['agencia','Agência'],['conta','Conta'],['tipoConta','Tipo de conta',['Corrente','Poupança','Pagamento']],['pix','Chave PIX'],['titular','Titular da conta'],['docTitular','CPF / CNPJ do titular'],['obs','Observações','TXT'],['docs','Documentos','DOCS:M']];
 const PRF=[['nome','Nome'],['cat','Categoria',CATS],['ncm','NCM'],['qual','Campos de qualidade (separados por vírgula)']];
@@ -1030,6 +1032,7 @@ const kb=n=>n>1048576?num(n/1048576,1)+' MB':num(n/1024)+' KB';
 function cadField([k,l,o],e){
   if(o==='CHK')return `<div class="f full"><label>${l} (marque um ou mais)</label><div class="chk">${[['cli','Cliente'],['forn','Fornecedor'],['transp','Transportadora']].map(([x,t])=>`<label><input type="checkbox" data-b="c:${x}" ${e[x]?'checked':''}> ${t}</label>`).join('')}</div></div>`;
   if(o==='USO')return `<div class="f"><label>${l}</label><div class="chk">${[['orig','Origem (retirada)'],['dest','Destino (entrega)']].map(([x,t])=>`<label><input type="checkbox" data-b="c:${x}" ${e[x]?'checked':''}> ${t}</label>`).join('')}</div></div>`;
+  if(o==='GEO')return fld(l,`<div class="row" style="gap:8px"><span class="${temCoord(e)?'':'mut'}">${geoTxt(e)}</span><button class="b sm" type="button" data-a="geoCad">Ajustar no mapa</button></div>`,'Se ficar vazia, é preenchida pela cidade ao salvar. Usada no mapa logístico.');
   if(o==='PARC')return fld(l,`<select data-b="c:${k}">${opts(S.parceiros,e[k],()=>true,pLab)}</select>`);
   if(o==='TRANSP')return fld(l,`<select data-b="c:${k}">${opts(S.parceiros,e[k],p=>p.transp,pLab,'— autônomo / sem vínculo —')}</select>`);
   if(o==='TXT')return fld(l,`<textarea data-b="c:${k}" rows="2">${h(e[k])}</textarea>`,'','full');
@@ -1734,6 +1737,37 @@ function contabilCsv(mes,fil){const q=v=>{const s=String(v??'');return /[";\n]/.
   S.titulos.filter(t=>(!fil||t.filial===fil)&&ok(t.venc)).forEach(t=>L.push([t.tipo==='r'?'Provisão a receber':'Provisão a pagar',dt(t.venc),filSig(t.filial),'',t.parte?pn(t.parte):'',t.parte?doc(t.parte):'',t.desc,'','',n2(t.valor),'','','','',t.cat,t.cc||'',t.baixa?'baixado':'em aberto']));
   return L.map(r=>r.map(q).join(';')).join('\r\n')}
 
+/* ---------- coordenadas (mapa logístico): geocodificação e mini-mapa com pino arrastável ---------- */
+const nCoord=v=>{const x=parseFloat(String(v??'').replace(',','.'));return isFinite(x)?x:null};
+const temCoord=o=>nCoord(o?.lat)!==null&&nCoord(o?.lon)!==null;
+async function geocodificar(cidade,uf){if(!cidade)return null;const q=encodeURIComponent(`${cidade} ${uf||''}`.trim());
+  try{const r=await fetch(`https://photon.komoot.io/api/?q=${q}&limit=1&osm_tag=place`),j=await r.json(),f=j.features?.[0];if(f&&(!f.properties.countrycode||f.properties.countrycode==='BR'))return{lat:+f.geometry.coordinates[1].toFixed(6),lon:+f.geometry.coordinates[0].toFixed(6),fonte:'photon'}}catch(e){}
+  try{const r=await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=br&limit=1&q=${q}`),j=await r.json();if(j[0])return{lat:+(+j[0].lat).toFixed(6),lon:+(+j[0].lon).toFixed(6),fonte:'nominatim'}}catch(e){}
+  try{await munCarregar();const k=Object.keys(MUN?.[uf]||{}).find(x=>x.localeCompare(cidade,'pt-BR',{sensitivity:'base'})===0),c=k&&MUN[uf][k];if(c)return{lat:c[0],lon:c[1],fonte:'ibge'}}catch(e){}
+  return null}
+/* preenche lat/lon de um registro salvo sem coordenadas (assíncrono, depois de salvar) */
+function geoPreencher(lista,id){const o=(S[lista]||[]).find(x=>x.id===id);if(!o||temCoord(o)||!o.cidade)return;
+  geocodificar(o.cidade,o.uf).then(g=>{const x=(S[lista]||[]).find(y=>y.id===id);if(!g||!x||temCoord(x))return;x.lat=g.lat;x.lon=g.lon;save();if(ui.cadEdit?.id===id){ui.cadEdit.lat=g.lat;ui.cadEdit.lon=g.lon}render();toast('Localização preenchida pela cidade. Ajuste o pino se precisar.')})}
+let MLP=null;const mlCarregar=()=>MLP??=new Promise((ok,no)=>{const c=document.createElement('link');c.rel='stylesheet';c.href='https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css';document.head.appendChild(c);
+  const s=document.createElement('script');s.src='https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js';s.onload=()=>ok(window.maplibregl);s.onerror=()=>{MLP=null;no(new Error('mapa indisponível'))};document.head.appendChild(s)});
+/* mini-mapa em janela: obj tem cidade/uf/lat/lon; onOk(lat,lon) */
+async function geoModal(titulo,obj,onOk){let lat=nCoord(obj.lat),lon=nCoord(obj.lon);
+  M.innerHTML=`<div class="modal"><div class="card" style="max-width:720px"><h2>Localização · ${h(titulo||'')}</h2><p class="mut">${h([obj.cidade,obj.uf].filter(Boolean).join('/')||'Sem cidade no cadastro')}. Arraste o pino até o local exato (portaria, balança, armazém) ou digite as coordenadas.</p>
+  <div id="gMap" style="height:340px;border-radius:12px;border:1px solid var(--line);background:#dfe7e2;display:grid;place-items:center"><span class="mut">Carregando mapa…</span></div>
+  <div class="grid" style="margin-top:10px"><div class="f"><label>Latitude</label><input id="gLa" inputmode="decimal" value="${lat??''}" placeholder="-18.918600"></div><div class="f"><label>Longitude</label><input id="gLo" inputmode="decimal" value="${lon??''}" placeholder="-48.277200"></div>
+  <div class="f"><label>&nbsp;</label><button class="b" id="gBu" type="button">Localizar pela cidade</button></div></div><p class="mut" id="gMs"></p>
+  <div class="row" style="margin-top:8px"><button class="b d" id="gLi" type="button">Limpar</button><span class="sp"></span><button class="b" id="mNo">Cancelar</button><button class="b p" id="mYes">Salvar localização</button></div></div></div>`;
+  const $=x=>document.getElementById(x);let map=null,mk=null;
+  const setP=(a,b,voar)=>{lat=+(+a).toFixed(6);lon=+(+b).toFixed(6);$('gLa').value=lat;$('gLo').value=lon;if(map){if(!mk){mk=new maplibregl.Marker({draggable:true,color:'#1e4a2e'}).setLngLat([lon,lat]).addTo(map);mk.on('dragend',()=>{const p=mk.getLngLat();setP(p.lat,p.lng,false)})}else mk.setLngLat([lon,lat]);if(voar)map.flyTo({center:[lon,lat],zoom:Math.max(map.getZoom(),13)})}};
+  const buscar=async()=>{$('gMs').textContent='Procurando a cidade…';const g=await geocodificar(obj.cidade,obj.uf);if(g){setP(g.lat,g.lon,true);$('gMs').textContent=`Encontrado (${g.fonte==='ibge'?'sede do município, IBGE':g.fonte}). Ajuste o pino se precisar.`}else $('gMs').textContent='Não encontrei a cidade. Digite as coordenadas ou clique no mapa.'};
+  $('gBu').onclick=buscar;$('mNo').onclick=()=>M.innerHTML='';$('gLi').onclick=()=>{lat=lon=null;$('gLa').value=$('gLo').value='';if(mk){mk.remove();mk=null}};
+  ['gLa','gLo'].forEach(i=>$(i).addEventListener('change',()=>{const a=nCoord($('gLa').value),b=nCoord($('gLo').value);if(a!==null&&b!==null&&Math.abs(a)<=90&&Math.abs(b)<=180)setP(a,b,true)}));
+  $('mYes').onclick=()=>{const a=nCoord($('gLa').value),b=nCoord($('gLo').value);if((a===null)!==(b===null)||(a!==null&&(Math.abs(a)>90||Math.abs(b)>180)))return toast('Coordenadas inválidas.');M.innerHTML='';onOk(a,b)};
+  try{await mlCarregar();if(!$('gMap'))return;$('gMap').innerHTML='';map=new maplibregl.Map({container:'gMap',style:'https://tiles.openfreemap.org/styles/liberty',center:[lon??-50,lat??-15],zoom:lat!==null?13:3.5,attributionControl:{compact:true}});
+    map.addControl(new maplibregl.NavigationControl({showCompass:false}),'top-right');map.on('click',e=>setP(e.lngLat.lat,e.lngLat.lng,false));map.on('load',()=>{if(lat!==null)setP(lat,lon,false);else if(obj.cidade)buscar()})}
+  catch(e){$('gMap').innerHTML='<span class="mut">Mapa indisponível agora (sem internet?). Digite as coordenadas.</span>';if(lat===null&&obj.cidade)buscar()}}
+const geoTxt=o=>temCoord(o)?`${num(nCoord(o.lat),6)}, ${num(nCoord(o.lon),6)}`:'sem localização';
+
 /* ---------- cotações ---------- */
 let cotF={tipo:'venda',st:'abertas',q:''};
 function vCot(){const q=cotF.q.toLowerCase(),l=CTS().filter(c=>COT.includes(c.status)&&c.tipo===cotF.tipo&&(cotF.st==='todas'||(cotF.st==='abertas'?c.status==='Cotação':c.status==='Perdida'))&&(!q||[c.cod,pn(c.parte),nm(S.produtos,c.prod)].join(' ').toLowerCase().includes(q))).sort((a,b)=>b.cod.localeCompare(a.cod)),ed=nivel('cot')>=2;
@@ -1858,6 +1892,7 @@ function vCfg(){const ed=nivel('config')>=2,T=[['tabelas','Tabelas de desconto']
     ${fld('Saldo mínimo de alerta (R$)',`<input data-cfg="saldoMin" data-num data-d="2" inputmode="decimal" value="${inp(+S.cfg.saldoMin||0,2)}" ${ed?'':'disabled'}>`,'O fluxo avisa o primeiro dia abaixo dele')}</div>
     <h3>Impostos (Lucro Real)</h3><div class="grid"><div class="f"><label><input type="checkbox" data-cfg="frCred" ${S.cfg.frCred?'checked':''} ${ed?'':'disabled'}> Crédito de PIS/COFINS sobre frete contratado</label><div class="hint">Frota própria não entra. Validar com o contador.</div></div>${fld('PIS (%)',`<input data-cfg="pisAl" data-num data-d="2" inputmode="decimal" value="${inp(S.cfg.pisAl,2)}" ${ed?'':'disabled'}>`)}${fld('COFINS (%)',`<input data-cfg="cofAl" data-num data-d="2" inputmode="decimal" value="${inp(S.cfg.cofAl,2)}" ${ed?'':'disabled'}>`)}</div></section>`;
   if(cfT==='geral'){const E=S.cfg.empresa,dis=ed?'':'disabled';body=`<section class="panel" style="padding:16px;margin-bottom:14px"><h3 style="margin-top:0">Dados da empresa (cotação e confirmação de negócio)</h3><div class="grid">${[['razao','Razão social'],['cnpj','CNPJ'],['ie','Inscrição estadual'],['end','Endereço'],['bairro','Bairro'],['cidade','Cidade'],['uf','UF'],['cep','CEP'],['tel','Telefone'],['email','E-mail']].map(([k,l])=>fld(l,`<input data-emp="${k}" value="${h(E[k]||'')}" ${dis}>`)).join('')}</div>
+    <h3>Unidades no mapa logístico</h3><div class="scroll"><table class="mini"><thead><tr><th>Unidade</th><th>Cidade/UF</th><th>Localização</th><th></th></tr></thead><tbody>${S.filiais.map(f=>`<tr><td><b>${h(f.nome)}</b>${f.matriz?' <span class="tag ok">matriz</span>':''}</td><td>${h([f.cidade,f.uf].filter(Boolean).join('/'))}</td><td class="${temCoord(f)?'':'mut'}">${geoTxt(f)}</td><td>${ed?`<button class="b sm" data-geofil="${f.id}">Ajustar no mapa</button>`:''}</td></tr>`).join('')}</tbody></table></div>${ed?'<div class="row" style="margin:8px 0 4px"><button class="b" data-a="geoTodos">Preencher localizações faltantes pela cidade</button><span class="mut">unidades, parceiros e locais sem coordenadas</span></div>':''}
     <h3>Crédito</h3><div class="grid">${fld('Quando passar do limite ou houver atraso',`<select data-cfg="credModo" ${dis}><option value="bloqueio" ${S.cfg.credModo==='bloqueio'?'selected':''}>Bloquear: só a Gestão aprova</option><option value="alerta" ${S.cfg.credModo==='alerta'?'selected':''}>Só alertar</option></select>`)}${fld('Tolerância de atraso (dias)',`<input data-cfg="credDias" data-num data-d="0" inputmode="numeric" value="${inp(+S.cfg.credDias||0,0)}" ${dis}>`)}</div>
     <h3>Condições especiais padrão</h3><div class="f full"><textarea data-cfg="condEsp" rows="5" ${dis}>${h(S.cfg.condEsp||'')}</textarea><div class="hint">Uma por linha. Saem numeradas na cotação e na confirmação; cada contrato pode editar as suas.</div></div></section>`+body}
   return `<h1>Configurações</h1>${tabs}${body}`}
@@ -2008,7 +2043,7 @@ function vCargaCampo(){const g=ui.carga,n=ui.neg,up=(cat,lab)=>`<label class="b 
 const nextSeq=p=>Math.max(0,...[...S.contratos,...S.negocios].map(o=>{const m=new RegExp('^'+p+'-(?:[A-Z]+-)?(\\d+)$').exec(o.cod||'');return m?+m[1]:0}))+1;
 const nextNum=(arr,pre)=>arr.reduce((m,x)=>Math.max(m,parseInt(String(x.cod).replace(/\D/g,''))||0),0)+1;
 document.addEventListener('click',e=>{
-  const t=e.target.closest('[data-openg],[data-rdel],[data-aprova],[data-recusa],[data-tadd],[data-tdel],[data-sdel],[data-sopen],[data-sdelsav],[data-openp],[data-msgl],[data-delloc],[data-a],[data-open],[data-openn],[data-add],[data-del],[data-dell],[data-cad],[data-ce],[data-cd],[data-ct],[data-msg],[data-unlink],[data-editg],[data-viewdoc],[data-deldoc],[data-tkok],[data-tkno],[data-bx],[data-estorno],[data-comp],[data-titedit],[data-titdel],[data-fint],[data-relt],[data-ratl],[data-qdel],[data-comall],[data-compay],[data-cft2],[data-tabed],[data-tabcp],[data-tabdel],[data-ctaed],[data-conf],[data-impdel],[data-goto],[data-fxv],[data-fxk],[data-adv],[data-cst],[data-cott],[data-cotpdf],[data-cotok],[data-cotno],[data-precodel],[data-cobr],[data-mksub],[data-fretedel]');if(!t)return;
+  const t=e.target.closest('[data-openg],[data-rdel],[data-aprova],[data-recusa],[data-tadd],[data-tdel],[data-sdel],[data-sopen],[data-sdelsav],[data-openp],[data-msgl],[data-delloc],[data-a],[data-open],[data-openn],[data-add],[data-del],[data-dell],[data-cad],[data-ce],[data-cd],[data-ct],[data-msg],[data-unlink],[data-editg],[data-viewdoc],[data-deldoc],[data-tkok],[data-tkno],[data-bx],[data-estorno],[data-comp],[data-titedit],[data-titdel],[data-fint],[data-relt],[data-ratl],[data-qdel],[data-comall],[data-compay],[data-cft2],[data-tabed],[data-tabcp],[data-tabdel],[data-ctaed],[data-conf],[data-impdel],[data-goto],[data-fxv],[data-fxk],[data-adv],[data-cst],[data-cott],[data-cotpdf],[data-cotok],[data-cotno],[data-precodel],[data-cobr],[data-mksub],[data-fretedel],[data-geofil]');if(!t)return;
   const a=t.dataset.a,d=CADS[ui.cad],ds=t.dataset;
   if(ds.openg){const[nid,gid]=ds.openg.split('|');if(!(ui.v==='negocios'&&ui.neg?.id===nid))ui.neg=structuredClone(by(S.negocios,nid));ui.carga=structuredClone(ui.neg.cargas.find(g=>g.id===gid));render();return}
   if(ds.cft){cf.tab=ds.cft;render();return}
@@ -2048,6 +2083,7 @@ document.addEventListener('click',e=>{
   if(ds.delloc){const x=ui.cadEdit._locs[+ds.delloc];if(S.contratos.some(c=>c.local===x.id))return aviso('Este local está em uso em contratos e não pode ser removido.');ui.cadEdit._locs.splice(+ds.delloc,1);render();return}
   if(ds.viewdoc){e.preventDefault();const[tg,id]=ds.viewdoc.split('|');docModal(tgtObj(tg).docs.find(x=>x.id===id));return}
   if(ds.deldoc){e.preventDefault();const[tg,id]=ds.deldoc.split('|'),o=tgtObj(tg);o.docs=o.docs.filter(x=>x.id!==id);if(tg==='n'){const st=by(S.negocios,o.id);if(st){st.docs=structuredClone(o.docs);save()}}render();return}
+  if(ds.geofil){if(nivel('config')<2)return;const f=S.filiais.find(x=>x.id===ds.geofil);if(f)geoModal(f.nome,f,(a,b)=>{f.lat=a??'';f.lon=b??'';logA('acesso','Ajustou localização da unidade',f.nome,geoTxt(f));save();render()});return}
   if(ds.mksub){mkF.sub=ds.mksub;render();return}
   if(ds.fretedel){if(nivel('mercado')<2&&nivel('logistica')<2)return;ask('Excluir este frete?',()=>{S.fretes=S.fretes.filter(x=>x.id!==ds.fretedel);save();render()});return}
   if(ds.cobr){if(nivel('fin')<2)return;cobrModal(ds.cobr);return}
@@ -2083,6 +2119,8 @@ document.addEventListener('click',e=>{
   case 'drePdf':saveDoc(`DRE-${dreF.ref}.html`,dreDoc());break;
   case 'dreCsv':saveCsv(`DRE-${dreF.ref}.csv`,dreCsv());break;
   case 'precoNovo':if(nivel('mercado')<2)return;precoModal();break;
+  case 'geoCad':{const e=ui.cadEdit;if(!e)return;geoModal(e.nome||e.fantasia,e,(a,b)=>{e.lat=a??'';e.lon=b??'';render()});break}
+  case 'geoTodos':{if(nivel('config')<2)return;const fila=[...S.filiais.filter(f=>!temCoord(f)).map(o=>['filiais',o]),...S.parceiros.filter(p=>!temCoord(p)&&p.cidade).map(o=>['parceiros',o]),...S.locais.filter(l=>!temCoord(l)&&l.cidade).map(o=>['locais',o])];if(!fila.length)return toast('Todos os cadastros com cidade já têm localização.');toast(`Preenchendo ${fila.length} localização(ões)…`);(async()=>{let ok=0;for(const[,o]of fila){const g=await geocodificar(o.cidade,o.uf);if(g&&!temCoord(o)){o.lat=g.lat;o.lon=g.lon;ok++}await new Promise(r=>setTimeout(r,1100))}save();render();toast(`${ok} de ${fila.length} localizações preenchidas.`)})();break}
   case 'logFr':ui.logFr=!ui.logFr;munCarregar().then(()=>{});render();break;
   case 'freteNovo':if(nivel('mercado')<2&&nivel('logistica')<2)return;freteModal();break;
   case 'addL':ui.draft.lanc.push({id:uid(),data:TODAY,valor:0,obs:''});render();break;
@@ -2139,7 +2177,7 @@ document.addEventListener('click',e=>{
   case 'cadNew':ui.cadEdit={...d.mk(),...d.preset};if(d.k==='parceiros')ui.cadEdit._locs=[];render();break;
   case 'addLoc':{const x=ui.cadEdit;x._locs.push({...L0(),parc:x.id,orig:!!x.forn||!x.cli,dest:!!x.cli&&!x.forn,cidade:x.cidade,uf:x.uf});render();break}
   case 'cadCancel':ui.cadEdit=null;render();break;
-  case 'cadSave':{const x=ui.cadEdit;
+  case 'cadSave':{const x=ui.cadEdit;if(['parceiros','locais'].includes(d.k)){const old=(S[d.k]||[]).find(o=>o.id===x.id);if(old&&temCoord(old)&&(old.cidade!==x.cidade||old.uf!==x.uf)&&old.lat===x.lat&&old.lon===x.lon){x.lat='';x.lon=''}setTimeout(()=>geoPreencher(d.k,x.id),400)}
     if(d.k==='usuarios'&&FB){x.email=String(x.email||'').trim().toLowerCase();if(!/^\S+@\S+\.\S+$/.test(x.email))return aviso('Informe o e-mail de login da pessoa.');if(S.usuarios.some(u=>u.id!==x.id&&(u.email||'').toLowerCase()===x.email))return aviso('Já existe usuário com este e-mail.')}
     if(!String(x.nome||x.placa||'').trim())return aviso(d.k==='veiculos'?'Informe a placa.':'Informe o nome.');
     if(d.k==='parceiros'&&!x.cli&&!x.forn&&!x.transp)return aviso('Marque pelo menos um papel: cliente, fornecedor ou transportadora.');
@@ -2228,7 +2266,7 @@ window.__toast=toast;
 window.__remote=(k,v)=>{if(k==='config'){['filiais','acessos','cfg','saldoIni'].forEach(x=>{if(v[x]!==undefined)S[x]=v[x]})}else S[k]=v;pendR=true;tryR()};
 let pendR=false;const editando=()=>!!(M.innerHTML||ui.carga||ui.draft||ui.cadEdit||(document.activeElement&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)&&document.activeElement.id!=='fil'));
 const tryR=()=>{if(pendR&&!editando()){pendR=false;render()}};setInterval(tryR,1500);
-render();checkFirst();if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+render();checkFirst();if(FB){try{if(new URLSearchParams(location.search).get('voltar')==='mapa'&&nivel('mapa')>=1){location.replace('mapa/');}}catch(e){}}if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 };
 </script>
 <script>
@@ -2310,7 +2348,32 @@ async function iniciar(em,me,cfg,novo){
     out.comPg=new Map(Object.entries(S.comPg||{}));
     out.config=new Map([['geral',cfgDe(S)]]);return out};
   const enc=(k,o)=>{const c=JSON.parse(JSON.stringify(o));if(k==='usuarios'){c.email=(c.email||'').toLowerCase();return c}if(k==='config')return c;const d={j:JSON.stringify(c),upd:Date.now(),por:me.nome};if(k==='log')d.q=c.q||new Date().toISOString();return d};
-  const salvar=S=>{if(S.filial)localStorage.setItem('pn-fil-'+E,S.filial);const cur=coletar(S);
+
+  /* espelho para o Mapa Logístico (/mapa/): campos simples que o mapa lê; gravado por quem altera a origem */
+  const MAPA=['mapa_unidades','mapa_parceiros','mapa_pontos','mapa_cargas'],MKEY='pn-mapa-'+E+'-'+em;
+  const MSH=(()=>{try{const o=JSON.parse(localStorage.getItem(MKEY)||'{}');return Object.fromEntries(MAPA.map(k=>[k,new Map(Object.entries(o[k]||{}))]))}catch(e){return Object.fromEntries(MAPA.map(k=>[k,new Map()]))}})();
+  const podeMapa={mapa_unidades:()=>lvl('config')>=2,mapa_parceiros:()=>lvl('cadastros')>=2,mapa_pontos:()=>lvl('cadastros')>=2||lvl('cargas')>=2||lvl('logistica')>=2||lvl('campo')>=2||lvl('negocios')>=2,mapa_cargas:()=>lvl('cargas')>=2||lvl('logistica')>=2||lvl('campo')>=2||lvl('negocios')>=2};
+  const espelho=S=>{const nc=v=>{const x=parseFloat(String(v??'').replace(',','.'));return isFinite(x)?x:null},geo=o=>{const a=nc(o.lat),b=nc(o.lon);return a===null||b===null?null:{lat:a,lon:b}},
+      byId=(a,id)=>(a||[]).find(x=>x.id===id),pnome=id=>{const p=byId(S.parceiros,id);return p?(p.fantasia||p.nome||''):''},prodN=id=>byId(S.produtos,id)?.nome||'',out=Object.fromEntries(MAPA.map(k=>[k,new Map()]));
+    (S.filiais||[]).forEach((f,i)=>{const g=geo(f);if(g)out.mapa_unidades.set(f.id,{nome:f.nome||'',cidade:f.cidade||'',uf:f.uf||'',...g,matriz:f.matriz!=null?!!f.matriz:i===0})});
+    const lim=new Date(Date.now()-90*864e5).toISOString().slice(0,10);
+    (S.parceiros||[]).forEach(p=>{const g=geo(p);if(!g)return;const cts=(S.contratos||[]).filter(c=>c.parte===p.id&&c.status!=='Cancelado'&&c.status!=='Rascunho'),ult=cts.slice().sort((a,b)=>String(b.ini||'').localeCompare(String(a.ini||'')))[0],
+        vol=Math.round(cts.filter(c=>(c.ini||'')>=lim).reduce((s,c)=>s+(+c.volKg||0),0)/3/1000),base={nome:p.fantasia||p.nome||'',razaoSocial:p.nome||'',cidade:p.cidade||'',uf:p.uf||'',...g};
+      if(p.cli)out.mapa_parceiros.set(p.id+'_cli',{...base,tipo:'cliente',produto:ult?prodN(ult.prod):'',volume:vol});
+      if(p.forn)out.mapa_parceiros.set(p.id+'_for',{...base,tipo:'fornecedor',produto:ult?prodN(ult.prod):'',volume:vol});
+      if(p.transp)out.mapa_parceiros.set(p.id+'_tra',{...base,tipo:'transportadora',frota:(S.motoristas||[]).filter(m=>m.transp===p.id).length})});
+    const ponto=(l,tipo)=>{const g=geo(l);if(!g)return null;const id=l.id+(tipo==='embarque'?'_e':'_d');if(!out.mapa_pontos.has(id))out.mapa_pontos.set(id,{nome:l.nome||'',tipo,parceiroId:l.parc||'',parceiro:pnome(l.parc),cidade:l.cidade||'',uf:l.uf||'',...g});return id};
+    (S.locais||[]).forEach(l=>{if(l.orig)ponto(l,'embarque');if(l.dest)ponto(l,'entrega')});
+    const STM={'Indo carregar':'carregando','Carregando':'carregando','Em trânsito':'em trânsito','Aguardando descarga':'aguardando descarga'};
+    (S.negocios||[]).forEach(n=>(n.cargas||[]).forEach(g=>{const st=STM[g.status];if(!st)return;const cc=byId(S.contratos,g.compra),cv=byId(S.contratos,g.venda),lo=cc&&byId(S.locais,cc.local),ld=cv&&byId(S.locais,cv.local);if(!lo||!ld)return;
+      const o=ponto(lo,'embarque'),d=ponto(ld,'entrega');if(!o||!d)return;
+      out.mapa_cargas.set(n.id+'_'+g.id,{codigo:(n.cod||'')+'-'+(g.num??''),origemId:o,destinoId:d,produto:prodN(n.prod),toneladas:Math.round((+g.pesoOrig||+g.pesoDest||+g.kg||0)/100)/10,transportadoraId:g.transp?g.transp+'_tra':'',transportadora:g.transp?pnome(g.transp):'',status:st,saida:g.data?(String(g.data).length===10?g.data+'T08:00:00':g.data):'',previsao:g.prev?(String(g.prev).length===10?g.prev+'T12:00:00':g.prev):'',negocio:n.cod||''})}));
+    return out};
+  const salvarMapa=S=>{let mudou=false;const cur=espelho(S);
+    MAPA.forEach(k=>{if(!podeMapa[k]())return;const sh=MSH[k],ops=[];cur[k].forEach((o,id)=>{const js=JSON.stringify(o);if(sh.get(id)!==js)ops.push(['s',id,o,js])});[...sh.keys()].forEach(id=>{if(!cur[k].has(id))ops.push(['d',id])});
+      for(let i=0;i<ops.length;i+=400){const part=ops.slice(i,i+400),b=F.writeBatch(db);part.forEach(([t,id,o])=>t==='s'?b.set(dref(k,id),{...o,atualizado:Date.now()}):b.delete(dref(k,id)));
+        b.commit().then(()=>{part.forEach(([t,id,,js])=>t==='s'?sh.set(id,js):sh.delete(id));try{localStorage.setItem(MKEY,JSON.stringify(Object.fromEntries(MAPA.map(x=>[x,Object.fromEntries(MSH[x])]))))}catch(e){}}).catch(e=>console.warn('mapa',k,e.code||e))}})};
+  const salvar=S=>{if(S.filial)localStorage.setItem('pn-fil-'+E,S.filial);try{salvarMapa(S)}catch(e){console.warn('mapa',e)}const cur=coletar(S);
     Object.entries(cur).forEach(([k,m])=>{if(!COLS.includes(k)&&k!=='log')return;const sh=SH[k]??=new Map(),ops=[];
       m.forEach((o,id)=>{const js=JSON.stringify(o);if(sh.get(id)!==js){ops.push(['s',id,o]);sh.set(id,js)}});
       if(k!=='log')[...sh.keys()].forEach(id=>{if(!m.has(id)){ops.push(['d',id]);sh.delete(id)}});

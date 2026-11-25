@@ -82,10 +82,18 @@ service cloud.firestore {
         allow write: if servidor() || gestao();
       }
 
+      // espelho para o Mapa Logístico (/mapa/): leitura só Gestão, Diretoria ou quem tiver o módulo mapa;
+      // escrita por quem pode alterar a origem (unidades = configurações; parceiros e pontos = cadastros; cargas = operação)
+      function mapaLe() { return member() && (gestao() || me().papel == 'Diretoria' || lvl('mapa') >= 1); }
+      match /mapa_unidades/{id} { allow read: if mapaLe(); allow write: if member() && (gestao() || lvl('config') >= 2); }
+      match /mapa_parceiros/{id} { allow read: if mapaLe(); allow write: if member() && (gestao() || lvl('cadastros') >= 2); }
+      match /mapa_pontos/{id} { allow read: if mapaLe(); allow write: if member() && (gestao() || lvl('cadastros') >= 2 || lvl('cargas') >= 2 || lvl('logistica') >= 2 || lvl('campo') >= 2 || lvl('negocios') >= 2); }
+      match /mapa_cargas/{id} { allow read: if mapaLe(); allow write: if member() && (gestao() || lvl('cargas') >= 2 || lvl('logistica') >= 2 || lvl('campo') >= 2 || lvl('negocios') >= 2); }
+
       // demais coleções
       match /{col}/{id} {
-        allow read: if !(col in ['config','usuarios','log','arquivos','servidor']) && member() && canRead(col);
-        allow write: if !(col in ['config','usuarios','log','arquivos','servidor']) && member() && canWrite(col);
+        allow read: if !(col in ['config','usuarios','log','arquivos','servidor','mapa_unidades','mapa_parceiros','mapa_pontos','mapa_cargas']) && member() && canRead(col);
+        allow write: if !(col in ['config','usuarios','log','arquivos','servidor','mapa_unidades','mapa_parceiros','mapa_pontos','mapa_cargas']) && member() && canWrite(col);
       }
     }
   }
