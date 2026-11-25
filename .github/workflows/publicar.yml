@@ -60,6 +60,27 @@ jobs:
           if d.get("project_id") != os.environ["PID"]: print("::error::A chave é do projeto", d.get("project_id"), "e o FIREBASE_PROJECT_ID é", os.environ["PID"]); sys.exit(1)
           print("chave ok:", d.get("client_email"))
           PY
+      - name: Lista de municípios (IBGE) para os campos de cidade
+        run: |
+          python3 - <<'PY'
+          import csv, io, json, urllib.request
+          def get(u):
+              with urllib.request.urlopen(u, timeout=60) as r: return r.read().decode("utf-8")
+          d = {}
+          try:
+              base = "https://raw.githubusercontent.com/kelvins/municipios-brasileiros/main/csv/"
+              uf = {r["codigo_uf"]: r["uf"] for r in csv.DictReader(io.StringIO(get(base + "estados.csv")))}
+              for r in csv.DictReader(io.StringIO(get(base + "municipios.csv"))):
+                  d.setdefault(uf[r["codigo_uf"]], {})[r["nome"]] = [round(float(r["latitude"]), 4), round(float(r["longitude"]), 4)]
+          except Exception as e:
+              print("::warning::coordenadas indisponíveis, usando só nomes do IBGE:", e)
+              for m in json.loads(get("https://servicodados.ibge.gov.br/api/v1/localidades/municipios?view=nivelado")):
+                  d.setdefault(m["UF-sigla"], {})[m["municipio-nome"]] = None
+          n = sum(len(v) for v in d.values())
+          if n < 5000: raise SystemExit(f"lista de municípios incompleta: {n}")
+          json.dump(d, open("public/municipios.json", "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
+          print("municípios:", n)
+          PY
       - name: Incluir os instaladores dos aplicativos (Windows e Android)
         env: { GH_TOKEN: "${{ github.token }}" }
         # No plano gratuito (Spark) o Firebase não aceita .exe/.apk soltos: vão compactados em .zip.

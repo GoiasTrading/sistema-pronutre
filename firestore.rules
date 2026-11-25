@@ -21,6 +21,7 @@ service cloud.firestore {
           || (c == 'simulacoes' && lvl('calc') >= 1)
           || (c == 'precos' && lvl('mercado') >= 1)
           || (c == 'contratosV' && vv())
+          || (c == 'fretes' && (lvl('mercado') >= 1 || lvl('logistica') >= 1))
           || (c == 'cobr' && finR())
           || (c == 'log' && lvl('hist') >= 1);
       }
@@ -35,7 +36,8 @@ service cloud.firestore {
           || (c == 'simulacoes' && lvl('calc') >= 1)
           || (c == 'precos' && lvl('mercado') >= 2)
           || (c == 'contratosV' && vv() && (lvl('contratos') >= 2 || lvl('cot') >= 2 || lvl('fin') >= 2 || lvl('aprov') >= 2))
-          || (c == 'cobr' && lvl('fin') >= 2);
+          || (c == 'cobr' && lvl('fin') >= 2)
+          || (c == 'fretes' && (lvl('mercado') >= 2 || lvl('logistica') >= 2));
       }
 
       // configuração geral (filiais, matriz de acessos, parâmetros)
