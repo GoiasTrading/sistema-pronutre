@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pronutre · Mapa de preços (simulação)</title>
+<link rel="icon" href="../icone-192.png">
+<link href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css" rel="stylesheet">
+<style>
+:root{--brand:#1e4a2e;--gold:#d4a443;--bg:#f4efe3;--panel:#fff;--line:#e3dccb;--ink:#16241a;--mute:#5d6d62}
+*{box-sizing:border-box}html,body{height:100%;margin:0}body{font:14.5px/1.45 system-ui,"Segoe UI",Arial,sans-serif;color:var(--ink);background:var(--bg);overflow:hidden;font-variant-numeric:tabular-nums}
+button,select,input{font:inherit;color:inherit}
+.top{height:56px;background:var(--brand);color:#fff;display:flex;align-items:center;gap:12px;padding:0 16px}
+.top b{font-size:17px;letter-spacing:.02em}.top small{opacity:.85}.chip{background:var(--gold);color:#1b1406;font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px}.sp{flex:1}
+.tabs{display:flex;gap:6px}.tabs button{height:36px;padding:0 14px;border-radius:8px;border:1px solid #ffffff55;background:#ffffff14;color:#fff;cursor:pointer;font-weight:600}.tabs button.on{background:#fff;color:var(--brand)}
+.wrap{position:absolute;top:56px;left:0;right:0;bottom:0;display:grid;grid-template-columns:350px 1fr}
+.panel{background:var(--panel);border-right:1px solid var(--line);overflow-y:auto;padding:14px 16px}
+h3{font-size:12px;letter-spacing:.06em;color:var(--mute);margin:16px 0 6px;text-transform:uppercase}
+.f{display:flex;flex-direction:column;gap:3px;margin-bottom:8px}.f label{font-size:12.5px;color:var(--mute)}
+select,input{height:38px;border:1px solid var(--line);border-radius:8px;padding:0 10px;background:#fff;width:100%}
+.row{display:flex;gap:8px;align-items:flex-end}.row>*{flex:1}
+.btn{height:38px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer;font-weight:600;padding:0 12px}.btn.p{background:var(--brand);color:#fff;border-color:var(--brand)}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px}.kpi{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:#fbf9f3}.kpi b{display:block;font-size:18px}.kpi span{font-size:12px;color:var(--mute)}
+.rk{width:100%;border-collapse:collapse;font-size:13px}.rk td{padding:5px 4px;border-bottom:1px solid var(--line)}.rk td.n{text-align:right;white-space:nowrap}.rk tr{cursor:pointer}.rk tr:hover td{background:#f6f2e6}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:6px}
+.mapwrap{position:relative}#map{position:absolute;inset:0}
+.legend{position:absolute;left:12px;bottom:28px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;box-shadow:0 4px 14px #0002;font-size:12.5px;min-width:250px}
+.bar{height:12px;border-radius:6px;margin:6px 0 3px}.lg{display:flex;justify-content:space-between;color:var(--mute)}
+.month{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:#fff;border:1px solid var(--line);border-radius:12px;padding:6px 14px;font-weight:800;font-size:20px;box-shadow:0 4px 14px #0002;display:none}
+.card{position:absolute;right:12px;top:12px;width:320px;max-width:calc(100% - 24px);background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 30px #0003;padding:14px;display:none;max-height:calc(100% - 24px);overflow:auto}
+.card.on{display:block}.card .x{position:absolute;right:6px;top:4px;border:0;background:none;font-size:22px;cursor:pointer;color:var(--mute)}
+.card h4{margin:0 0 2px;font-size:18px}.card .sub{color:var(--mute);font-size:12.5px;margin-bottom:8px}
+.note{font-size:12px;color:var(--mute);margin-top:10px}
+.maplibregl-popup-content{font:13px/1.4 system-ui,Arial;padding:8px 10px;border-radius:8px}
+@media(max-width:860px){body{overflow:auto}.wrap{position:static;display:flex;flex-direction:column}.mapwrap{height:62vh;order:-1}.panel{border-right:0}.top small{display:none}.tabs button{padding:0 10px}.legend{min-width:0;left:8px;right:8px}}
+</style>
+</head>
+<body>
+<header class="top"><b>PRONUTRE</b><small>Mapa de preços</small><span class="chip">Simulação · dados fictícios</span><span class="sp"></span>
+  <div class="tabs" id="tabs"><button class="on" data-l="compra">Compra (FOB)</button><button data-l="venda">Venda (CIF)</button></div></header>
+<div class="wrap">
+ <aside class="panel">
+  <div class="f"><label>Produto</label><select id="fProd"></select></div>
+  <div class="row"><div class="f"><label>De</label><input type="month" id="fIni"></div><div class="f"><label>Até</label><input type="month" id="fFim"></div></div>
+  <div class="row"><div class="f"><label>Época do ano</label><select id="fMes"><option value="0">Ano todo</option></select></div><div class="f"><label>Unidade</label><select id="fUn"><option value="t">R$/t</option><option value="sc">R$/saca</option></select></div></div>
+  <div class="f"><label>Origem do dado</label><select id="fSt"><option value="">Todas</option><option>Fechado</option><option>Cotação</option><option>Oferta de mercado</option><option>Fonte externa</option></select></div>
+  <div class="row"><button class="btn p" id="play">▶ Animar o ano</button><button class="btn" id="reset">Limpar filtros</button></div>
+  <h3>Resumo</h3><div class="kpis" id="kpis"></div>
+  <h3 id="rkT">Melhores regiões</h3><table class="rk" id="rk"></table>
+  <h3 id="rcT">Melhores cidades</h3><table class="rk" id="rc"></table>
+  <p class="note">Cor do estado = média ponderada pelo volume. Bolinha = cidade (tamanho = volume, cor = preço). Estado com menos de 3 registros fica cinza ("pouca amostra"). Clique em um estado para ver a sazonalidade.</p>
+ </aside>
+ <section class="mapwrap"><div id="map"></div><div class="month" id="mLab"></div>
+  <div class="legend"><b id="lgT">Preço de compra (FOB)</b><div class="bar" id="lgBar"></div><div class="lg"><span id="lgMin">—</span><span id="lgMid"></span><span id="lgMax">—</span></div><div class="lg" style="margin-top:2px"><span id="lgA">barato</span><span id="lgB">caro</span></div><div style="margin-top:6px;color:var(--mute)"><span class="sw" style="background:#c9ccc8"></span>pouca amostra</div></div>
+  <div class="card" id="card"><button class="x" id="cx">×</button><div id="cb"></div></div>
+ </section>
+</div>
+<script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
+<script>
+const $=id=>document.getElementById(id),MES=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const fmt=(v,d=0)=>v.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d}),brl=v=>'R$ '+fmt(v,2);
+/* ---------- dados fictícios ---------- */
+const CID=[['Sorriso','MT',-12.55,-55.71],['Lucas do Rio Verde','MT',-13.05,-55.91],['Sinop','MT',-11.86,-55.51],['Nova Mutum','MT',-13.84,-56.07],['Primavera do Leste','MT',-15.56,-54.28],['Rondonópolis','MT',-16.47,-54.64],['Sapezal','MT',-13.54,-58.81],['Campo Novo do Parecis','MT',-13.66,-57.89],
+ ['Rio Verde','GO',-17.79,-50.92],['Jataí','GO',-17.88,-51.72],['Mineiros','GO',-17.57,-52.55],['Itumbiara','GO',-18.42,-49.22],['Cristalina','GO',-16.77,-47.61],['Goiânia','GO',-16.68,-49.26],
+ ['Uberlândia','MG',-18.92,-48.28],['Uberaba','MG',-19.75,-47.93],['Patos de Minas','MG',-18.58,-46.52],['Unaí','MG',-16.36,-46.91],['Araguari','MG',-18.65,-48.19],
+ ['Dourados','MS',-22.22,-54.81],['Maracaju','MS',-21.61,-55.17],['Chapadão do Sul','MS',-18.79,-52.62],['Campo Grande','MS',-20.47,-54.62],
+ ['Luís Eduardo Magalhães','BA',-12.10,-45.79],['Barreiras','BA',-12.15,-45.0],['São Desidério','BA',-12.36,-44.97],
+ ['Cascavel','PR',-24.96,-53.46],['Toledo','PR',-24.72,-53.74],['Maringá','PR',-23.42,-51.94],['Londrina','PR',-23.31,-51.16],['Ponta Grossa','PR',-25.09,-50.16],
+ ['Ribeirão Preto','SP',-21.18,-47.81],['Campinas','SP',-22.91,-47.06],['Bastos','SP',-21.92,-50.73],['Presidente Prudente','SP',-22.12,-51.39],['Itapeva','SP',-23.98,-48.88],
+ ['Chapecó','SC',-27.10,-52.62],['Linhares','ES',-19.39,-40.06],['Serra','ES',-20.13,-40.31]];
+const PROD={milho:{n:'Milho',sc:1,base:{compra:980,venda:1250},amp:.16,pico:10,safra:7},soja:{n:'Soja',sc:1,base:{compra:2050,venda:2280},amp:.08,pico:11,safra:3},
+ farelo:{n:'Farelo de soja',sc:0,base:{compra:1750,venda:2050},amp:.07,pico:9,safra:5},caroco:{n:'Caroço de algodão',sc:0,base:{compra:980,venda:1330},amp:.22,pico:4,safra:9}};
+/* diferencial regional: compra FOB mais barata longe do consumo; venda CIF mais cara nos polos de ração/leite */
+const DIF={compra:{MT:-.13,BA:-.07,GO:-.03,MS:-.04,MG:.02,PR:.06,SP:.08,SC:.12,ES:.10},venda:{MT:-.10,BA:-.05,GO:-.02,MS:-.03,MG:.03,PR:.05,SP:.08,SC:.11,ES:.12}};
+const PAPEL={compra:['MT','GO','MG','MS','BA','PR','SP'],venda:['PR','SP','SC','ES','MG','GO','MS','MT']};
+let seed=7;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+const PARTES={compra:['Coop. Vale','Armazém Central','Agro Grãos','Fazenda Boa Vista','Cerealista Sul','Algodoeira Norte','Esmagadora Oeste','Grupo Planalto'],venda:['Ração Forte','Laticínio Vale','Confinamento Três Barras','Granja Sol','Coop. Agroindustrial','Nutri Rações','Frigorífico Oeste','Avícola Serrana']};
+const ORIG=['Fechado','Cotação','Oferta de mercado','Oferta de mercado','Fonte externa'];
+const DATA=[];
+(()=>{const ini=new Date(2025,0,1);for(const lado of['compra','venda'])for(const pk in PROD){const P=PROD[pk];
+  for(const [c,uf,lat,lon] of CID){if(!PAPEL[lado].includes(uf))continue;if(pk==='caroco'&&lado==='compra'&&!['MT','GO','BA','MS','MG'].includes(uf))continue;
+   const loc=(rnd()-.5)*.06,n=8+Math.floor(rnd()*16);
+   for(let i=0;i<n;i++){const d=new Date(ini.getTime()+rnd()*700*864e5);if(d>new Date(2026,10,24))continue;const m=d.getMonth()+1;
+    const saz=P.amp*Math.cos((m-P.pico)/12*2*Math.PI)*.5+(m===P.safra||m===P.safra+1?-P.amp*.35:0);
+    const tr=(d.getFullYear()-2025)*.04,pr=P.base[lado]*(1+DIF[lado][uf]+loc+saz+tr+(rnd()-.5)*.05);
+    DATA.push({lado,prod:pk,c,uf,lat,lon,d:d.toISOString().slice(0,10),m,v:Math.round(pr*100)/100,t:Math.round(30+rnd()*600),parte:PARTES[lado][Math.floor(rnd()*8)],orig:ORIG[Math.floor(rnd()*5)]})}}}})();
+/* ---------- estado ---------- */
+const F={lado:'compra',prod:'milho',ini:'2025-01',fim:'2026-11',mes:0,un:'t',st:''};
+Object.entries(PROD).forEach(([k,p])=>$('fProd').insertAdjacentHTML('beforeend',`<option value="${k}">${p.n}</option>`));MES.forEach((m,i)=>$('fMes').insertAdjacentHTML('beforeend',`<option value="${i+1}">${m[0].toUpperCase()+m.slice(1)}</option>`));
+const sync=()=>{$('fProd').value=F.prod;$('fIni').value=F.ini;$('fFim').value=F.fim;$('fMes').value=F.mes;$('fUn').value=F.un;$('fSt').value=F.st};sync();
+const filt=()=>DATA.filter(r=>r.lado===F.lado&&r.prod===F.prod&&r.d.slice(0,7)>=F.ini&&r.d.slice(0,7)<=F.fim&&(!F.mes||r.m===F.mes)&&(!F.st||r.orig===F.st));
+const un=v=>F.un==='sc'?v*.06:v,unT=()=>F.un==='sc'?'/sc':'/t';
+const agg=(rows,key)=>{const o={};rows.forEach(r=>{const k=key(r),a=o[k]??={k,n:0,t:0,s:0,mn:1e9,mx:0,rows:[]};a.n++;a.t+=r.t;a.s+=r.v*r.t;a.mn=Math.min(a.mn,r.v);a.mx=Math.max(a.mx,r.v);a.rows.push(r)});Object.values(o).forEach(a=>a.m=a.s/a.t);return o};
+/* escala fria → quente (barato → caro) */
+const STOPS=['#2c7bb6','#00a6ca','#00ccbc','#90eb9d','#ffff8c','#f9d057','#f29e2e','#e76818','#d7191c'];
+const hx=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)),toH=a=>'#'+a.map(x=>Math.round(x).toString(16).padStart(2,'0')).join('');
+const cor=(v,mn,mx)=>{if(mx<=mn)return STOPS[4];const t=Math.min(1,Math.max(0,(v-mn)/(mx-mn)))*(STOPS.length-1),i=Math.min(STOPS.length-2,Math.floor(t)),f=t-i,a=hx(STOPS[i]),b=hx(STOPS[i+1]);return toH(a.map((x,j)=>x+(b[j]-x)*f))};
+$('lgBar').style.background=`linear-gradient(90deg,${STOPS.join(',')})`;
+/* ---------- mapa ---------- */
+const NOMAP={on(){},getSource(){},getLayer(){},setPaintProperty(){},getCanvas:()=>({style:{}}),addControl(){}};
+const map=!window.maplibregl?NOMAP:new maplibregl.Map({container:'map',style:'https://tiles.openfreemap.org/styles/positron',center:[-51,-17],zoom:3.9,attributionControl:{compact:true}});
+if(window.maplibregl)map.addControl(new maplibregl.NavigationControl({showCompass:false}),'bottom-right');else $('map').innerHTML='<p style="padding:20px;color:#5d6d62">Mapa indisponível (sem internet). Os rankings ao lado continuam funcionando.</p>';
+const UFC={RO:11,AC:12,AM:13,RR:14,PA:15,AP:16,TO:17,MA:21,PI:22,CE:23,RN:24,PB:25,PE:26,AL:27,SE:28,BA:29,MG:31,ES:32,RJ:33,SP:35,PR:41,SC:42,RS:43,MS:50,MT:51,GO:52,DF:53},CUF=Object.fromEntries(Object.entries(UFC).map(([u,c])=>[String(c),u]));
+const UFN={MT:'Mato Grosso',GO:'Goiás',MG:'Minas Gerais',MS:'Mato Grosso do Sul',BA:'Bahia',PR:'Paraná',SP:'São Paulo',SC:'Santa Catarina',ES:'Espírito Santo'};
+let UF=null,pop=window.maplibregl&&new maplibregl.Popup({closeButton:false,closeOnClick:false,offset:8});
+map.on('load',async()=>{
+ try{UF=await (await fetch('https://servicodados.ibge.gov.br/api/v3/malhas/paises/BR?formato=application/vnd.geo%2Bjson&qualidade=minima&intrarregiao=UF')).json()}catch(e){UF={type:'FeatureCollection',features:[]}}
+ UF.features.forEach(f=>f.properties.uf=CUF[String(f.properties.codarea)]);
+ const before=map.getStyle().layers.find(l=>l.type==='symbol')?.id;
+ map.addSource('uf',{type:'geojson',data:UF});map.addLayer({id:'uf-fill',type:'fill',source:'uf',paint:{'fill-color':['coalesce',['get','cor'],'rgba(0,0,0,0)'],'fill-opacity':['case',['has','cor'],.72,0],'fill-color-transition':{duration:500}}},before);
+ map.addLayer({id:'uf-line',type:'line',source:'uf',paint:{'line-color':'#1e4a2e','line-width':['case',['==',['get','uf'],['literal','__sel']],3,.8],'line-opacity':.7}},before);
+ map.addSource('cid',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+ map.addLayer({id:'cid',type:'circle',source:'cid',paint:{'circle-radius':['get','r'],'circle-color':['get','cor'],'circle-stroke-color':'#fff','circle-stroke-width':1.6,'circle-opacity':.95}});
+ map.addLayer({id:'cid-lb',type:'symbol',source:'cid',minzoom:5.2,layout:{'text-field':['get','lb'],'text-size':11,'text-offset':[0,1.3],'text-font':['Noto Sans Regular']},paint:{'text-color':'#16241a','text-halo-color':'#fff','text-halo-width':1.4}});
+ map.on('mousemove','cid',e=>{const p=e.features[0].properties;map.getCanvas().style.cursor='pointer';pop.setLngLat(e.lngLat).setHTML(`<b>${p.c}/${p.uf}</b><br>${brl(un(p.m))}${unT()} · ${p.n} registro(s)<br><span style="color:#5d6d62">mín ${brl(un(p.mn))} · máx ${brl(un(p.mx))}</span>`).addTo(map)});
+ map.on('mouseleave','cid',()=>{map.getCanvas().style.cursor='';pop.remove()});
+ map.on('click','uf-fill',e=>{const u=e.features[0].properties.uf;if(u)abrirUF(u)});
+ draw()});
+/* ---------- desenho ---------- */
+let SEL=null;
+function draw(){const rows=filt(),bU=agg(rows,r=>r.uf),bC=agg(rows,r=>r.c+'|'+r.uf),okU=Object.values(bU).filter(a=>a.n>=3),vals=[...okU.map(a=>a.m),...Object.values(bC).map(a=>a.m)];
+ const mn=vals.length?Math.min(...vals):0,mx=vals.length?Math.max(...vals):0,comp=F.lado==='compra';
+ if(UF){UF.features.forEach(f=>{const a=bU[f.properties.uf];delete f.properties.cor;if(a)f.properties.cor=a.n>=3?cor(a.m,mn,mx):'#c9ccc8'});map.getSource('uf')?.setData(UF);map.setPaintProperty('uf-line','line-width',['case',['==',['get','uf'],SEL||'__'],3.2,.8])}
+ const tmax=Math.max(1,...Object.values(bC).map(a=>a.t));
+ map.getSource('cid')?.setData({type:'FeatureCollection',features:Object.values(bC).map(a=>{const r=a.rows[0];return{type:'Feature',geometry:{type:'Point',coordinates:[r.lon,r.lat]},properties:{c:r.c,uf:r.uf,m:a.m,mn:a.mn,mx:a.mx,n:a.n,r:5+11*Math.sqrt(a.t/tmax),cor:cor(a.m,mn,mx),lb:r.c+' · '+fmt(un(a.m))}}})});
+ $('lgT').textContent=comp?'Preço de compra (FOB)':'Preço de venda (CIF)';$('lgMin').textContent=vals.length?brl(un(mn)):'—';$('lgMax').textContent=vals.length?brl(un(mx)):'—';$('lgMid').textContent=vals.length?brl(un((mn+mx)/2)):'';
+ $('lgA').textContent=comp?'barato · melhor para comprar':'barato';$('lgB').textContent=comp?'caro':'caro · melhor para vender';
+ const tt=rows.reduce((s,r)=>s+r.t,0),m=tt?rows.reduce((s,r)=>s+r.v*r.t,0)/tt:0;
+ $('kpis').innerHTML=[[m?brl(un(m))+unT():'—','Média ponderada'],[rows.length?brl(un(Math.min(...rows.map(r=>r.v))))+' – '+fmt(un(Math.max(...rows.map(r=>r.v)))):'—','Mín – máx'],[fmt(rows.length),'Registros'],[fmt(tt)+' t','Volume']].map(([v,l])=>`<div class="kpi"><b>${v}</b><span>${l}</span></div>`).join('');
+ const ord=(a,b)=>comp?a.m-b.m:b.m-a.m;
+ $('rkT').textContent=comp?'Melhores estados para comprar':'Melhores estados para vender';$('rcT').textContent=comp?'Melhores cidades para comprar':'Melhores cidades para vender';
+ $('rk').innerHTML=Object.values(bU).sort((a,b)=>(b.n>=3)-(a.n>=3)||ord(a,b)).map((a,i)=>`<tr data-uf="${a.k}"><td>${a.n>=3?i+1+'º':'—'}</td><td><span class="sw" style="background:${a.n>=3?cor(a.m,mn,mx):'#c9ccc8'}"></span>${UFN[a.k]||a.k}</td><td class="n"><b>${brl(un(a.m))}</b></td><td class="n" style="color:#5d6d62">${a.n} reg.</td></tr>`).join('')||'<tr><td>Sem dados no filtro</td></tr>';
+ $('rc').innerHTML=Object.values(bC).sort(ord).slice(0,8).map((a,i)=>`<tr data-uf="${a.rows[0].uf}"><td>${i+1}º</td><td><span class="sw" style="background:${cor(a.m,mn,mx)}"></span>${a.rows[0].c}/${a.rows[0].uf}</td><td class="n"><b>${brl(un(a.m))}</b></td><td class="n" style="color:#5d6d62">${a.n} reg.</td></tr>`).join('');
+ if(SEL)abrirUF(SEL,true)}
+function abrirUF(u,silent){SEL=u;const base=DATA.filter(r=>r.lado===F.lado&&r.prod===F.prod&&r.d.slice(0,7)>=F.ini&&r.d.slice(0,7)<=F.fim&&(!F.st||r.orig===F.st)),rows=base.filter(r=>r.uf===u),all=agg(base,r=>r.m),reg=agg(rows,r=>r.m),cur=filt().filter(r=>r.uf===u),a=agg(cur,()=>'x').x;
+ const pts=k=>Array.from({length:12},(_,i)=>k[i+1]?.m??null),pu=pts(reg),pb=pts(all),vs=[...pu,...pb].filter(v=>v!=null),lo=Math.min(...vs),hi=Math.max(...vs),W=290,H=110,X=i=>14+i*(W-24)/11,Y=v=>H-18-(v-lo)/((hi-lo)||1)*(H-34);
+ const line=(p,c,w)=>{let d='';p.forEach((v,i)=>{if(v!=null)d+=(d?'L':'M')+X(i).toFixed(1)+','+Y(v).toFixed(1)});return`<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}"/>`};
+ const best=pu.map((v,i)=>[v,i]).filter(x=>x[0]!=null).sort((x,y)=>F.lado==='compra'?x[0]-y[0]:y[0]-x[0])[0];
+ $('cb').innerHTML=`<h4>${UFN[u]||u}</h4><div class="sub">${PROD[F.prod].n} · ${F.lado==='compra'?'compra FOB':'venda CIF'}${F.mes?' · '+MES[F.mes-1]:''}</div>
+  ${a?`<div class="kpis"><div class="kpi"><b>${brl(un(a.m))}</b><span>média${unT()}</span></div><div class="kpi"><b>${a.n}</b><span>registros · ${fmt(a.t)} t</span></div></div>`:'<p class="note">Sem registros neste filtro.</p>'}
+  <h3>Sazonalidade (média por mês)</h3><svg viewBox="0 0 ${W} ${H}" style="width:100%">${vs.length?line(pb,'#9aa5b1',1.6)+line(pu,'#1e4a2e',2.6):''}${MES.map((m,i)=>`<text x="${X(i)}" y="${H-3}" font-size="9" text-anchor="middle" fill="#5d6d62">${m[0]}</text>`).join('')}</svg>
+  <div class="note" style="margin-top:0"><span style="color:#1e4a2e">━</span> ${u} &nbsp; <span style="color:#9aa5b1">━</span> média geral${best?` · melhor mês para ${F.lado==='compra'?'comprar':'vender'}: <b>${MES[best[1]]}</b> (${brl(un(best[0]))})`:''}</div>
+  <h3>Cidades</h3><table class="rk">${Object.values(agg(cur,r=>r.c)).sort((x,y)=>F.lado==='compra'?x.m-y.m:y.m-x.m).map(c=>`<tr><td>${c.k}</td><td class="n"><b>${brl(un(c.m))}</b></td><td class="n" style="color:#5d6d62">${c.n}</td></tr>`).join('')}</table>
+  <h3>Últimos registros</h3><table class="rk">${cur.sort((x,y)=>y.d.localeCompare(x.d)).slice(0,6).map(r=>`<tr><td>${r.d.split('-').reverse().join('/')}<br><span style="color:#5d6d62">${r.parte} · ${r.orig}</span></td><td class="n">${r.c}<br><b>${brl(un(r.v))}</b></td></tr>`).join('')}</table>`;
+ $('card').classList.add('on');if(!silent&&map.getLayer('uf-line'))map.setPaintProperty('uf-line','line-width',['case',['==',['get','uf'],u],3.2,.8])}
+$('cx').onclick=()=>{$('card').classList.remove('on');SEL=null;map.getLayer('uf-line')&&map.setPaintProperty('uf-line','line-width',.8)};
+document.addEventListener('click',e=>{const tr=e.target.closest('[data-uf]');if(tr&&tr.closest('.panel'))abrirUF(tr.dataset.uf)});
+/* ---------- filtros e animação ---------- */
+$('tabs').onclick=e=>{const l=e.target.dataset.l;if(!l)return;F.lado=l;document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.l===l));draw()};
+[['fProd','prod'],['fIni','ini'],['fFim','fim'],['fMes','mes'],['fUn','un'],['fSt','st']].forEach(([id,k])=>$(id).onchange=()=>{F[k]=k==='mes'?+$(id).value:$(id).value;draw()});
+$('reset').onclick=()=>{Object.assign(F,{ini:'2025-01',fim:'2026-11',mes:0,un:'t',st:''});sync();draw()};
+let tm=null;$('play').onclick=()=>{if(tm){clearInterval(tm);tm=null;$('play').textContent='▶ Animar o ano';$('mLab').style.display='none';return}
+ $('play').textContent='■ Parar';$('mLab').style.display='block';let m=0;const step=()=>{m=m%12+1;F.mes=m;sync();$('mLab').textContent=MES[m-1].toUpperCase();draw()};step();tm=setInterval(step,1400)};
+draw();
+</script>
+</body>
+</html>
