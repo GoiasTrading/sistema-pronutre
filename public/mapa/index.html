@@ -560,7 +560,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&picking){picking=nu
 const PN_CONFIG={
   loginUrl:'/?voltar=mapa',     // página de login do ERP (volta ao mapa depois de entrar)
   colecoes:{unidades:'empresas/pronutre/mapa_unidades',parceiros:'empresas/pronutre/mapa_parceiros',pontos:'empresas/pronutre/mapa_pontos',cargas:'empresas/pronutre/mapa_cargas'},
-  demoSeVazio:true,             // sem dados no Firestore → mostra demonstração
+  demoSeVazio:false,            // sistema em produção: mostra só os dados reais do ERP
   sdk:'10.12.2'
 };
 (async()=>{

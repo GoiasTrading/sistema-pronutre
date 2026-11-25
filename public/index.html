@@ -2267,7 +2267,7 @@ window.__toast=toast;
 window.__remote=(k,v)=>{if(k==='config'){['filiais','acessos','cfg','saldoIni'].forEach(x=>{if(v[x]!==undefined)S[x]=v[x]})}else S[k]=v;pendR=true;tryR()};
 let pendR=false;const editando=()=>!!(M.innerHTML||ui.carga||ui.draft||ui.cadEdit||(document.activeElement&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)&&document.activeElement.id!=='fil'));
 const tryR=()=>{if(pendR&&!editando()){pendR=false;render()}};setInterval(tryR,1500);
-render();checkFirst();if(FB){try{if(new URLSearchParams(location.search).get('voltar')==='mapa'&&nivel('mapa')>=1){location.replace('mapa/');}}catch(e){}}if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+render();checkFirst();if(FB&&nivel('config')>=2)setTimeout(()=>S.filiais.forEach(f=>{if(!temCoord(f)&&f.cidade)geoPreencher('filiais',f.id)}),4000);if(FB){try{if(new URLSearchParams(location.search).get('voltar')==='mapa'&&nivel('mapa')>=1){location.replace('mapa/');}}catch(e){}}if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 };
 </script>
 <script>
