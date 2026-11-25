@@ -1149,13 +1149,39 @@ const WMIMG=()=>`<img class="wm" src="${LOGO.wm}" alt="">`;
 const docHTML=(title,body)=>`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>${h(title)}</title><style>${docCSS}</style><style>${WMCSS}</style></head><body>${WMIMG()}
 <div class="top"><div><div class="brand"><img src="${LOGO.verde}" alt="Pronutre" style="height:46px;width:auto;display:block"></div><h1>${h(title)}</h1></div><div class="mut">Emitido em ${new Date().toLocaleString('pt-BR')}<br>por ${h(S.user)}</div></div>${body}
 <script>window.onload=()=>setTimeout(()=>{try{print()}catch(e){}},400)<\/script></body></html>`;
+/* ---------- HTML → PDF (sem bibliotecas: SVG foreignObject → canvas → JPEG → PDF) ---------- */
+async function htmlParaPdf(html){let W=794,PH=1123;const K=2,f=document.createElement('iframe');f.style.cssText=`position:fixed;left:-10000px;top:0;width:${W}px;height:${PH}px;border:0`;
+  f.srcdoc=html.replace(/<script[\s\S]*?<\/script>/gi,'');document.body.appendChild(f);await new Promise(r=>{f.onload=r;setTimeout(r,3000)});
+  try{const d=f.contentDocument;{const sw=f.contentDocument.documentElement.scrollWidth;if(sw>W+4){W=Math.min(sw,1600);PH=Math.round(W*1.4142);f.style.width=W+'px';await new Promise(r=>setTimeout(r,50))}}await Promise.all([...d.images].map(i=>i.complete?0:new Promise(r=>{i.onload=i.onerror=r})));
+    const css=[...d.querySelectorAll('style')].map(s=>s.textContent).join('\n').replace(/@page[^{]*\{[^}]*\}/g,''),H=Math.max(d.documentElement.scrollHeight,d.body.scrollHeight,PH);
+    const box=d.createElement('div');box.setAttribute('xmlns','http://www.w3.org/1999/xhtml');box.innerHTML=`<style>${css} .wm,.wmimg{position:absolute!important}</style>`;const cs=d.defaultView.getComputedStyle(d.body),bd=d.createElement('div');bd.className='__body';bd.innerHTML=d.body.innerHTML;box.appendChild(bd);
+    const css2=css.replace(/(^|[},\s])body(?=[\s{,.:#\[])/g,'$1.__body');box.firstChild.textContent=css2+` .wm,.wmimg{position:absolute!important} .__body{margin:0!important;width:${W}px;box-sizing:border-box;padding:${cs.marginTop} ${cs.marginRight} ${cs.marginBottom} ${cs.marginLeft};background:#fff;position:relative}`;
+    const xml=new XMLSerializer().serializeToString(box),svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}"><foreignObject x="0" y="0" width="${W}" height="${H}">${xml}</foreignObject></svg>`;
+    const img=new Image();img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);await img.decode();
+    const c=document.createElement('canvas');c.width=W*K;c.height=H*K;const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(img,0,0,c.width,c.height);
+    const branca=y=>{const r=g.getImageData(0,y*K,c.width,1).data;for(let i=0;i<r.length;i+=16)if(r[i]<235||r[i+1]<235||r[i+2]<235)return false;return true};
+    const cortes=[0];let y=0;while(H-y>PH){let cut=y+PH;for(let t=cut;t>y+PH-160;t--)if(branca(t)){cut=t;break}cortes.push(cut);y=cut}cortes.push(H);
+    const pgs=[];for(let i=0;i<cortes.length-1;i++){const h0=cortes[i],h1=cortes[i+1],p=document.createElement('canvas');p.width=W*K;p.height=(h1-h0)*K;const pg=p.getContext('2d');pg.fillStyle='#fff';pg.fillRect(0,0,p.width,p.height);pg.drawImage(c,0,h0*K,c.width,(h1-h0)*K,0,0,p.width,p.height);
+      const b=await new Promise(r=>p.toBlob(r,'image/jpeg',.88));pgs.push({jpg:new Uint8Array(await b.arrayBuffer()),w:p.width,h:p.height,hpt:(h1-h0)*595.28/W})}
+    return pdfDeJpegs(pgs)}finally{f.remove()}}
+function pdfDeJpegs(pgs){const enc=new TextEncoder(),partes=[],offs=[];let tam=0;const put=x=>{const b=typeof x==='string'?enc.encode(x):x;partes.push(b);tam+=b.length};
+  const n=2+pgs.length*3;put('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');const obj=(i,s,bin)=>{offs[i]=tam;put(`${i} 0 obj\n${s}`);if(bin){put(bin);put('\nendstream')}put('\nendobj\n')};
+  obj(1,'<< /Type /Catalog /Pages 2 0 R >>');obj(2,`<< /Type /Pages /Count ${pgs.length} /Kids [${pgs.map((_,i)=>(3+i*3)+' 0 R').join(' ')}] >>`);
+  pgs.forEach((p,i)=>{const o=3+i*3,top=841.89,cs=`q 595.28 0 0 ${p.hpt.toFixed(2)} 0 ${(top-p.hpt).toFixed(2)} cm /Im0 Do Q`;
+    obj(o,`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /XObject << /Im0 ${o+2} 0 R >> >> /Contents ${o+1} 0 R >>`);
+    obj(o+1,`<< /Length ${cs.length} >>\nstream\n`,enc.encode(cs));obj(o+2,`<< /Type /XObject /Subtype /Image /Width ${p.w} /Height ${p.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${p.jpg.length} >>\nstream\n`,p.jpg)});
+  const xr=tam;put(`xref\n0 ${n+1}\n0000000000 65535 f \n`+offs.slice(1).map(o=>String(o).padStart(10,'0')+' 00000 n \n').join('')+`trailer\n<< /Size ${n+1} /Root 1 0 R >>\nstartxref\n${xr}\n%%EOF`);
+  return new Blob(partes,{type:'application/pdf'})}
 const baixarBlob=(name,blob)=>{const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;a.rel='noopener';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),60000)};
 const celular=()=>/Android|iPhone|iPad/i.test(navigator.userAgent);
 function imprimirHTML(name,html){if(celular()){const u=URL.createObjectURL(new Blob([html],{type:'text/html'})),w=window.open(u,'_blank');if(!w)baixarBlob(name,new Blob([html],{type:'text/html'}));setTimeout(()=>URL.revokeObjectURL(u),120000);return}
   const f=document.createElement('iframe');f.setAttribute('aria-hidden','true');f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';f.srcdoc=html;document.body.appendChild(f);setTimeout(()=>f.remove(),120000)}
 async function saveDoc(name,html){if(FB?.putFile)FB.putFile(uid(),new Blob([html],{type:'text/html'}),{rel:1,nome:name}).catch(()=>{});
   const d=DL||(window.claude?.use?await window.claude.use('downloads').catch(()=>null):null);
-  if(d){try{await d.save({filename:name,data:html});aviso('Arquivo gerado. Abra o arquivo: ele já abre a janela de impressão (ou salvar em PDF).');return}catch(e){if(e?.code==='declined')return}}
+  const pdfN=name.replace(/\.html?$/i,'')+'.pdf';
+  if(d){try{toast('Gerando o PDF…');const b=await htmlParaPdf(html);await d.save({filename:pdfN,data:b});toast('PDF salvo.');return}catch(e){if(e?.code==='declined')return;console.warn('pdf',e)}
+    try{await d.save({filename:name,data:html});aviso('Arquivo gerado. Abra o arquivo: ele já abre a janela de impressão (ou salvar em PDF).');return}catch(e){if(e?.code==='declined')return}}
+  if(celular()){try{toast('Gerando o PDF…');baixarBlob(pdfN,await htmlParaPdf(html));toast('PDF baixado.');return}catch(e){console.warn('pdf',e)}}
   try{imprimirHTML(name,html);toast('Abrindo a impressão. Para PDF, escolha "Salvar como PDF" na impressora.')}catch(e){baixarBlob(name,new Blob([html],{type:'text/html'}));toast('Arquivo baixado: abra para imprimir.')}}
 const sigBlock=(lab,nome,sig,em,cod_)=>{const u=S.usuarios.find(x=>x.nome===nome),full=sig?.nome||u?.nomeCompleto||nome||'';
   return `<div class="sb"><div class="im">${sig?.img?`<img src="${sig.img}" alt="Assinatura">`:''}</div><div class="ln"><b>${h(full||' ')}</b><br>${h(lab)}${u?.cargo?' · '+h(u.cargo):''}</div>
